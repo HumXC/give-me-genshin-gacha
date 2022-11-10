@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -63,44 +64,46 @@ type Response struct {
 	Region  string   `json:"region"`
 }
 
-func main() {
+// 搜索游戏日志获取游戏数据文件的目录
+func GetGameDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Println("无法获取用户目录")
-		return
+		return "", errors.New("无法获取用户目录: " + err.Error())
 	}
 	// 读取原神日志文件
 	logFileName := path.Join(homeDir, "AppData", "LocalLow", "miHoYo", "原神", "output_log.txt")
 	logFile, err := os.Open(logFileName)
 	if err != nil {
-		fmt.Println("无法读取游戏日志")
-		return
+		return "", errors.New("无法读取游戏日志: " + err.Error())
 	}
 	defer logFile.Close()
 	logScanner := bufio.NewScanner(logFile)
 	// 获取游戏数据目录名称
-	gameDataDir := "YuanShen_Data"
+	searchName := "YuanShen_Data"
 	for {
-		logScanner.Scan()
+		if !logScanner.Scan() {
+			break
+		}
 		line := logScanner.Text()
 		err := logScanner.Err()
 		if err != nil {
-			fmt.Println("日志解析错误, 尝试进入游戏")
-			return
+			return "", errors.New("日志解析错误: " + err.Error())
 		}
 		if !strings.Contains(line, "Warmup file") {
 			continue
 		}
-		if !strings.Contains(line, gameDataDir) {
+		if !strings.Contains(line, searchName) {
 			continue
 		}
 
-		i := strings.LastIndex(line, gameDataDir)
-		gameDataDir = line[12 : i+len(gameDataDir)]
-		fmt.Println("找到游戏数据目录: ", gameDataDir)
-		break
+		i := strings.LastIndex(line, searchName)
+		return line[12 : i+len(searchName)], nil
 	}
+	return "", errors.New("罕见错误, 没有找到游戏目录")
+}
 
+// 从游戏目录中的网络缓存获取旅行者祈愿的 URL
+func GetRawURL(gameDataDir string) (string, error) {
 	// 读取网络日志
 	// TODO: 直接读取，而不是先使用 powershell 复制，powershell 启动缓慢
 	webCacheName := path.Join(gameDataDir, "webCaches", "Cache", "Cache_Data", "data_2")
@@ -108,50 +111,61 @@ func main() {
 
 	webCache, err := os.ReadFile("temp")
 	if err != nil {
-		fmt.Println("读取缓存失败: ", err)
-		return
+		return "", errors.New("读取缓存失败: " + err.Error())
 	}
 	// os.Remove("temp")
 	// temp 的数据由 “0” 分割
 	// 提取出 temp 里的 urll 字符串
-	var rawURL string
-	var urlEnd int
+	var strEnd int
 
 	api := "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
-
+	prefx := "1/0/"
 	for i := len(webCache) - 1; i > 0; i-- {
 		b := webCache[i]
 		if b != 0 {
-			if urlEnd == 0 {
-				urlEnd = i
+			if strEnd == 0 {
+				strEnd = i
 			}
 			continue
 		}
 
-		if urlEnd == 0 {
+		if strEnd == 0 {
 			continue
 		}
 
-		str := string(webCache[i+1 : urlEnd+1])
-		urlEnd = 0
-		// 链接在 temp 里以 “1/0/” 开头
-		prefx := "1/0/"
+		// 将数据以 “0” 分段
+		str := string(webCache[i+1 : strEnd+1])
+		strEnd = 0
+		// 是否为链接，链接在 temp 里以 “1/0/” 开头
 		if !strings.HasPrefix(str, prefx) {
 			continue
 		}
-		s := strings.TrimPrefix(str, prefx)
-		if strings.HasPrefix(s, api) {
-			rawURL = s
-			break
+		// 检查是否为祈愿记录 api 的 url
+		if !strings.HasPrefix(str, prefx+api) {
+			continue
 		}
+		return str[4:], nil
 
 	}
-
+	return "", errors.New("没有找到祈愿链接，尝试在游戏里打开祈愿历史记录页面")
+}
+func main() {
+	gameDataDir, err := GetGameDir()
+	if err != nil {
+		log.Fatal("获取游戏目录时异常: ", err)
+		return
+	}
+	rawURL, err := GetRawURL(gameDataDir)
+	if err != nil {
+		log.Fatal("解析游戏缓存时异常: ", err)
+		return
+	}
 	// 解析链接参数
+
 	f := NewFetcher(rawURL)
 	f.Get(常驻祈愿)
-
 	fmt.Printf("%v", f)
+
 }
 
 type Fecher struct {
@@ -172,7 +186,7 @@ func (f *Fecher) Get(gachaType string) error {
 
 	query.Set("gacha_type", gachaType)
 	for {
-		fmt.Printf("正在为[%s]获取[%s]第 %d 页\n", f.url, ParseGachaType(gachaType), page)
+		fmt.Printf("正在获取[%s]第 %d 页\n", ParseGachaType(gachaType), page)
 		query.Set("page", strconv.Itoa(page))
 		query.Set("end_id", endID)
 		f.url.RawQuery = query.Encode()
@@ -220,5 +234,4 @@ func NewFetcher(rawURL string) *Fecher {
 		url:    u,
 		Result: make(map[string][]RespDataListItem),
 	}
-
 }
