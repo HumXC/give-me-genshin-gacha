@@ -111,17 +111,26 @@ func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) 
 		}
 		page++
 		l := r.Data.List
+		if _, ok := lastIDs[f.Uid]; !ok {
+			lastIDs[f.Uid] = make(map[string]string)
+		}
+
+		// 提取出"更新"的条目
 		for i, v := range l {
 			if f.Uid == "" {
 				f.Uid = v.Uid
 			}
-			if v.ID != lastIDs[f.Uid][gachaTypeNum] {
+			if id, ok := lastIDs[v.Uid][gachaTypeNum]; !ok {
+				break
+			} else if id != v.ID {
 				continue
 			}
+
 			list = append(list, l[:i]...)
 			flag = true
 			break
 		}
+
 		if flag {
 			break
 		}
