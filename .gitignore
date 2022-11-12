@@ -16,3 +16,5 @@
 
 cmd/temp
 .vscode
+cmd/*.json
+cmd/*.db

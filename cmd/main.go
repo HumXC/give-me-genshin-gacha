@@ -2,67 +2,17 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
+	"give-me-genshin-gacha/database"
+	"give-me-genshin-gacha/network"
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
 	"strings"
-	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
-
-const (
-	角色活动祈愿 = "301"
-	武器活动祈愿 = "302"
-	常驻祈愿   = "200"
-	新手祈愿   = "100"
-)
-
-func ParseGachaType(gachaType string) string {
-	switch gachaType {
-	case "301":
-		return "角色活动祈愿"
-	case "302":
-		return "武器活动祈愿"
-	case "200":
-		return "常驻祈愿"
-	case "100":
-		return "新手祈愿"
-	default:
-		return "未知祈愿类型: " + gachaType
-	}
-}
-
-type RespDataListItem struct {
-	Uid       string `json:"uid"`
-	GachaType string `json:"gacha_type"`
-	ItemId    string `json:"item_id"`
-	Count     string `json:"count"`
-	Time      string `json:"time"`
-	Name      string `json:"name"`
-	Lang      string `json:"lang"`
-	Itemtype  string `json:"item_type"`
-	RankType  string `json:"rank_type"`
-	ID        string `json:"id"`
-}
-type RespData struct {
-	Page  string             `json:"page"`
-	Size  string             `json:"size"`
-	Total string             `josn:"total"`
-	List  []RespDataListItem `json:"list"`
-}
-type Response struct {
-	RetCode int      `json:"retcode"`
-	Message string   `json:"message"`
-	Data    RespData `json:"data"`
-	Region  string   `json:"region"`
-}
 
 // 搜索游戏日志获取游戏数据文件的目录
 func GetGameDir() (string, error) {
@@ -99,7 +49,7 @@ func GetGameDir() (string, error) {
 		i := strings.LastIndex(line, searchName)
 		return line[12 : i+len(searchName)], nil
 	}
-	return "", errors.New("罕见错误, 没有找到游戏目录")
+	return "", errors.New("没有找到游戏目录, 尝试进入游戏后再运行")
 }
 
 // 从游戏目录中的网络缓存获取旅行者祈愿的 URL
@@ -149,89 +99,53 @@ func GetRawURL(gameDataDir string) (string, error) {
 	}
 	return "", errors.New("没有找到祈愿链接，尝试在游戏里打开祈愿历史记录页面")
 }
+
+// TODO: 增加 以系统代理获取url的功能
+// TODO: 后端
+// TODO: 前端
 func main() {
 	gameDataDir, err := GetGameDir()
 	if err != nil {
 		log.Fatal("获取游戏目录时异常: ", err)
 		return
 	}
+	log.Println("找到游戏目录: ", gameDataDir)
 	rawURL, err := GetRawURL(gameDataDir)
 	if err != nil {
 		log.Fatal("解析游戏缓存时异常: ", err)
 		return
 	}
-	// 解析链接参数
 
-	f := NewFetcher(rawURL)
-	f.Get(常驻祈愿)
-	fmt.Printf("%v", f)
-
-}
-
-type Fecher struct {
-	Uid    string
-	url    *url.URL
-	Result map[string][]RespDataListItem
-}
-
-// 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
-func (f *Fecher) Get(gachaType string) error {
-	list := f.Result[gachaType]
-	page := 1
-	endID := "0"
-	if len(list) > 0 {
-		endID = list[len(list)-1].ID
-	}
-	query := f.url.Query()
-
-	query.Set("gacha_type", gachaType)
-	for {
-		fmt.Printf("正在获取[%s]第 %d 页\n", ParseGachaType(gachaType), page)
-		query.Set("page", strconv.Itoa(page))
-		query.Set("end_id", endID)
-		f.url.RawQuery = query.Encode()
-		url_ := f.url.String()
-		resp, err := http.DefaultClient.Get(url_)
-		if err != nil {
-			return err
-		}
-		jsonData, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		var r Response
-		err = json.Unmarshal(jsonData, &r)
-		if err != nil {
-			return err
-		}
-		if r.Message != "OK" {
-			return errors.New("Api error: " + r.Message)
-		}
-		if len(r.Data.List) == 0 {
-			break
-		}
-		page++
-		endID = r.Data.List[len(r.Data.List)-1].ID
-		list = append(list, r.Data.List...)
-		time.Sleep(1 * time.Second)
-	}
-	f.Result[gachaType] = list
-	return nil
-}
-
-func NewFetcher(rawURL string) *Fecher {
-	u, err := url.Parse(rawURL)
+	fetcher, err := network.NewFetcher(rawURL)
 	if err != nil {
-		fmt.Println("URL 解析失败: ", err)
-		return nil
+		log.Fatal("爬虫创建失败:", err)
 	}
-	query := u.Query()
-	query.Set("size", "20")
-	query.Set("end_id", "0")
-	u.RawQuery = query.Encode()
-	return &Fecher{
-		Uid:    query.Get("uid"),
-		url:    u,
-		Result: make(map[string][]RespDataListItem),
+	db, err := database.NewDB()
+	if err != nil {
+		log.Fatal("数据库创建失败", err)
 	}
+
+	err = SyncFetcherToDB(fetcher, db)
+	if err != nil {
+		log.Fatal("同步失败:", err)
+	}
+}
+func SyncFetcherToDB(f *network.Fecher, db *database.DB) error {
+	lastIDs, err := db.GetLastIDs()
+	if err != nil {
+		return err
+	}
+	for _, v := range network.GachaType {
+		err := f.Get(v, lastIDs)
+		if err != nil {
+			return err
+		}
+	}
+	for _, v := range f.Result {
+		err := db.Add(v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
