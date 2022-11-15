@@ -136,13 +136,11 @@ func SyncFetcherToDB(f *network.Fecher, db *database.DB) error {
 		return err
 	}
 	for _, v := range network.GachaType {
-		err := f.Get(v, lastIDs)
+		result, err := f.Get(v, lastIDs)
 		if err != nil {
 			return err
 		}
-	}
-	for _, v := range f.Result {
-		err := db.Add(v)
+		err = db.Add(*result)
 		if err != nil {
 			return err
 		}

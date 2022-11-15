@@ -62,9 +62,8 @@ type Response struct {
 	Region  string   `json:"region"`
 }
 type Fecher struct {
-	Uid    string
-	url    *url.URL
-	Result map[string][]RespDataListItem
+	Uid string
+	url *url.URL
 }
 
 func genError(err error) error {
@@ -73,8 +72,8 @@ func genError(err error) error {
 
 // 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
 // lastIDs map[uid]map[gachaType][lastID]
-func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) error {
-	list := f.Result[gachaTypeNum]
+func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) (*[]RespDataListItem, error) {
+	list := make([]RespDataListItem, 0)
 	page := 1
 	endID := "0"
 	if len(list) > 0 {
@@ -92,19 +91,19 @@ func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) 
 		url_ := f.url.String()
 		resp, err := http.DefaultClient.Get(url_)
 		if err != nil {
-			return genError(err)
+			return nil, genError(err)
 		}
 		jsonData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return genError(err)
+			return nil, genError(err)
 		}
 		var r Response
 		err = json.Unmarshal(jsonData, &r)
 		if err != nil {
-			return genError(err)
+			return nil, genError(err)
 		}
 		if r.Message != "OK" {
-			return genError(errors.New("Api error: " + r.Message))
+			return nil, genError(errors.New("Api error: " + r.Message))
 		}
 		if len(r.Data.List) == 0 {
 			break
@@ -138,8 +137,7 @@ func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) 
 		list = append(list, l...)
 		time.Sleep(1 * time.Second)
 	}
-	f.Result[gachaTypeNum] = list
-	return nil
+	return &list, nil
 }
 
 func NewFetcher(rawURL string) (*Fecher, error) {
@@ -152,8 +150,7 @@ func NewFetcher(rawURL string) (*Fecher, error) {
 	query.Set("end_id", "0")
 	u.RawQuery = query.Encode()
 	return &Fecher{
-		Uid:    "",
-		url:    u,
-		Result: make(map[string][]RespDataListItem),
+		Uid: "",
+		url: u,
 	}, nil
 }
