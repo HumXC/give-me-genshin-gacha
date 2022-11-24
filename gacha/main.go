@@ -1,4 +1,4 @@
-package main
+package gacha
 
 import (
 	"bufio"
@@ -103,7 +103,7 @@ func GetRawURL(gameDataDir string) (string, error) {
 // TODO: 增加 以系统代理获取url的功能
 // TODO: 后端
 // TODO: 前端
-func main() {
+func t() {
 	gameDataDir, err := GetGameDir()
 	if err != nil {
 		log.Fatal("获取游戏目录时异常: ", err)
