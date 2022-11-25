@@ -1,14 +1,16 @@
-package network
+package gacha
 
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/logger"
 )
 
 var GachaType map[string]string
@@ -64,15 +66,16 @@ type Response struct {
 type Fecher struct {
 	Uid string
 	url *url.URL
+	l   logger.Logger
 }
 
 func genError(err error) error {
-	return errors.New("Fecher Error: \n\t" + err.Error())
+	return errors.New("Fecher error: \n\t" + err.Error())
 }
 
 // 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
 // lastIDs map[uid]map[gachaType][lastID]
-func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) (*[]RespDataListItem, error) {
+func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]string) (*[]RespDataListItem, error) {
 	list := make([]RespDataListItem, 0)
 	page := 1
 	endID := "0"
@@ -84,26 +87,26 @@ func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) 
 	query.Set("gacha_type", gachaTypeNum)
 	for {
 		flag := false
-		log.Printf("正在获取 [%s] 第 %d 页\n", ParseGachaType(gachaTypeNum), page)
+		f.l.Info(fmt.Sprintf("正在获取 [%s] 第 %d 页", ParseGachaType(gachaTypeNum), page))
 		query.Set("page", strconv.Itoa(page))
 		query.Set("end_id", endID)
 		f.url.RawQuery = query.Encode()
 		url_ := f.url.String()
 		resp, err := http.DefaultClient.Get(url_)
 		if err != nil {
-			return nil, genError(err)
+			return &list, genError(err)
 		}
 		jsonData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, genError(err)
+			return &list, genError(err)
 		}
 		var r Response
 		err = json.Unmarshal(jsonData, &r)
 		if err != nil {
-			return nil, genError(err)
+			return &list, genError(err)
 		}
 		if r.Message != "OK" {
-			return nil, genError(errors.New("Api error: " + r.Message))
+			return &list, genError(errors.New("Api error: " + r.Message))
 		}
 		if len(r.Data.List) == 0 {
 			break
@@ -140,7 +143,20 @@ func (f *Fecher) Get(gachaTypeNum string, lastIDs map[string]map[string]string) 
 	return &list, nil
 }
 
-func NewFetcher(rawURL string) (*Fecher, error) {
+func (f *Fecher) Get(lastIDs map[string]map[string]string) (*[]RespDataListItem, error) {
+	result := make([]RespDataListItem, 0)
+	for _, t := range GachaType {
+		r, err := f.getGacha(t, lastIDs)
+		if err != nil {
+			result = append(result, *r...)
+			return &result, err
+		}
+		result = append(result, *r...)
+	}
+	return &result, nil
+}
+
+func NewFetcher(logger logger.Logger, rawURL string) (*Fecher, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
@@ -152,5 +168,6 @@ func NewFetcher(rawURL string) (*Fecher, error) {
 	return &Fecher{
 		Uid: "",
 		url: u,
+		l:   logger,
 	}, nil
 }

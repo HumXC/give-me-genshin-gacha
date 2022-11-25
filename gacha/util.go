@@ -3,16 +3,13 @@ package gacha
 import (
 	"bufio"
 	"errors"
-	"give-me-genshin-gacha/database"
-	"give-me-genshin-gacha/network"
-	"log"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
-
-	_ "github.com/mattn/go-sqlite3"
 )
+
+const Api = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
 
 // 搜索游戏日志获取游戏数据文件的目录
 func GetGameDir() (string, error) {
@@ -68,7 +65,6 @@ func GetRawURL(gameDataDir string) (string, error) {
 	// 提取出 temp 里的 urll 字符串
 	var strEnd int
 
-	api := "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
 	prefx := "1/0/"
 	for i := len(webCache) - 1; i > 0; i-- {
 		b := webCache[i]
@@ -91,7 +87,7 @@ func GetRawURL(gameDataDir string) (string, error) {
 			continue
 		}
 		// 检查是否为祈愿记录 api 的 url
-		if !strings.HasPrefix(str, prefx+api) {
+		if !strings.HasPrefix(str, prefx+Api) {
 			continue
 		}
 		return str[4:], nil
@@ -101,49 +97,3 @@ func GetRawURL(gameDataDir string) (string, error) {
 }
 
 // TODO: 增加 以系统代理获取url的功能
-// TODO: 后端
-// TODO: 前端
-func t() {
-	gameDataDir, err := GetGameDir()
-	if err != nil {
-		log.Fatal("获取游戏目录时异常: ", err)
-		return
-	}
-	log.Println("找到游戏目录: ", gameDataDir)
-	rawURL, err := GetRawURL(gameDataDir)
-	if err != nil {
-		log.Fatal("解析游戏缓存时异常: ", err)
-		return
-	}
-
-	fetcher, err := network.NewFetcher(rawURL)
-	if err != nil {
-		log.Fatal("爬虫创建失败:", err)
-	}
-	db, err := database.NewDB()
-	if err != nil {
-		log.Fatal("数据库创建失败", err)
-	}
-
-	err = SyncFetcherToDB(fetcher, db)
-	if err != nil {
-		log.Fatal("同步失败:", err)
-	}
-}
-func SyncFetcherToDB(f *network.Fecher, db *database.DB) error {
-	lastIDs, err := db.GetLastIDs()
-	if err != nil {
-		return err
-	}
-	for _, v := range network.GachaType {
-		result, err := f.Get(v, lastIDs)
-		if err != nil {
-			return err
-		}
-		err = db.Add(*result)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
