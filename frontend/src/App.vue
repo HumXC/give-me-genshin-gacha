@@ -6,6 +6,9 @@ import { ElMessage, MessageParams } from "element-plus";
 import { ref, Ref } from "vue";
 import { Option } from "./type";
 import GachaInfo from "./components/GachaInfo.vue";
+import { fa } from "element-plus/es/locale";
+import GachaData from "./components/GachaData.vue";
+import { useDark, useToggle } from "@vueuse/core";
 
 type Message = {
     type: string;
@@ -69,6 +72,7 @@ const option: Ref<Option> = ref(<Option>{
     },
 });
 
+// 控制选项侧栏的开启与关闭
 const optionMenuData: Ref<{ isShow: boolean; opt: Option }> = ref(<
     { isShow: boolean; opt: Option }
 >{
@@ -82,13 +86,19 @@ function openOptionMenu() {
 
 // 打开祈愿数据页面
 // TODO
+const gachaDataData: Ref<{
+    isShow: boolean;
+}> = ref(<{ isShow: boolean }>{
+    isShow: false,
+});
 function openGachaDataPage(name: string, count: number) {
-    console.log(name + count);
+    gachaDataData.value.isShow = true;
 }
 </script>
 
 <template>
     <OptionMenu :data="optionMenuData" />
+    <GachaData :data="gachaDataData" />
     <ControlBar @open-option-menu="openOptionMenu" />
     <GachaInfo :data="option" @open-gacha-data-page="openGachaDataPage" />
 </template>

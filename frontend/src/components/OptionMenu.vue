@@ -5,14 +5,14 @@
 <script lang="ts" setup>
 import { Option } from "../type";
 // TODO: 增加 close 事件，实现关闭页面时保存 Option
-const props = defineProps<{ data: { isShow: boolean; opt: Option } }>();
+defineProps<{ data: { isShow: boolean; opt: Option } }>();
 </script>
 <template>
     <!-- 设置侧栏 -->
     <el-drawer
         style="text-align: left"
         size="250"
-        v-model="props.data.isShow"
+        v-model="data.isShow"
         direction="rtl"
         title="选项"
     >
