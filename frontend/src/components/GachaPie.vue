@@ -1,17 +1,20 @@
 <script lang="ts" setup>
-import { init, EChartsOption, use } from "echarts";
+import { init, EChartsOption, use, ElementEvent } from "echarts";
 import { ElCard } from "element-plus";
 import { onMounted, ref } from "vue";
+import { gachaTypeToName } from "../main";
 import { PieData } from "../type";
 
-// TODO: 添加更多的参数以支持不同的点击位置
-defineEmits<{
-    (e: "open-click"): void;
+// gachaType: 祈愿类型，showType: 显示类型
+// all 是点击饼图中心按钮时传递的参数，其他是点击饼图某一块传递对应的参数
+const emit = defineEmits<{
+    (e: "pie-click", gachaType: string, showType: string): void;
 }>();
 const props = defineProps<{ data: PieData }>();
+const gachaName = ref(gachaTypeToName(props.data.gachaType));
 onMounted(() => {
-    var d = props.data;
-    var opt = {
+    let d = props.data;
+    let opt = {
         tooltip: {
             trigger: "item",
         },
@@ -23,7 +26,7 @@ onMounted(() => {
             {
                 top: 10,
                 bottom: 60,
-                name: d.name,
+                name: gachaName.value,
                 type: "pie",
                 radius: ["10%", "100%"],
                 avoidLabelOverlap: false,
@@ -39,20 +42,37 @@ onMounted(() => {
                     show: false,
                 },
                 data: [
-                    { value: d.三星武器, name: "三星武器" },
-                    { value: d.四星角色, name: "四星角色" },
-                    { value: d.四星武器, name: "四星武器" },
-                    { value: d.五星角色, name: "五星角色" },
-                    { value: d.五星武器, name: "五星武器" },
+                    { value: d.arms3Total, name: "三星武器" },
+                    { value: d.role4Total, name: "四星角色" },
+                    { value: d.arms4Total, name: "四星武器" },
+                    { value: d.role5Total, name: "五星角色" },
+                    { value: d.arms5Total, name: "五星武器" },
                 ],
             },
         ],
     };
-    let myChart = init(<HTMLElement>document.getElementById(d.name));
+    let myChart = init(<HTMLElement>document.getElementById(gachaName.value));
     myChart.setOption(opt);
-    // TODO: 通过点击饼图上不同的色块，打开对应的 GachaData 页面
-    myChart.on("click", (p) => {
-        console.log(p);
+    myChart.on("click", (p: any) => {
+        let type = "all";
+        switch (p.data.name) {
+            case "三星武器":
+                type = "arms3";
+                break;
+            case "四星武器":
+                type = "arms4";
+                break;
+            case "五星武器":
+                type = "arms5";
+                break;
+            case "四星角色":
+                type = "role4";
+                break;
+            case "五星角色":
+                type = "role5";
+                break;
+        }
+        emit("pie-click", props.data.gachaType, type);
     });
 });
 </script>
@@ -61,14 +81,17 @@ onMounted(() => {
     <el-card class="gacha-box">
         <template #header>
             <div class="card-header">
-                <span>{{ data.name }}</span>
+                <span>{{ gachaName }}</span>
             </div>
         </template>
-        <div :id="data.name" class="chart-pie"></div>
+        <div :id="gachaName" class="chart-pie"></div>
         <el-tooltip show-after="1000" content="距上一次出五星的祈愿次数" placement="top">
-            <el-button class="used-num" @click.prevent="$emit('open-click')" circle>{{
-                data.几发未出金
-            }}</el-button>
+            <el-button
+                class="used-num"
+                @click.prevent="$emit('pie-click', data.gachaType, 'all')"
+                circle
+                >{{ data.usedCost }}</el-button
+            >
         </el-tooltip>
     </el-card>
 </template>

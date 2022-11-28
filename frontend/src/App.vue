@@ -2,6 +2,7 @@
 import ControlBar from "./components/ControlBar.vue";
 import OptionMenu from "./components/OptionMenu.vue";
 import { GetMsg } from "../wailsjs/go/main/Bridge";
+
 import { ElMessage, MessageParams } from "element-plus";
 import { ref, Ref } from "vue";
 import { Option } from "./type";
@@ -9,6 +10,8 @@ import GachaInfo from "./components/GachaInfo.vue";
 import { fa } from "element-plus/es/locale";
 import GachaData from "./components/GachaData.vue";
 import { useDark, useToggle } from "@vueuse/core";
+import { main } from "../wailsjs/go/models";
+import { GetOption, SaveOption } from "../wailsjs/go/main/App";
 
 type Message = {
     type: string;
@@ -85,20 +88,47 @@ function openOptionMenu() {
 }
 
 // 打开祈愿数据页面
-// TODO
 const gachaDataData: Ref<{
     isShow: boolean;
 }> = ref(<{ isShow: boolean }>{
     isShow: false,
 });
-function openGachaDataPage(name: string, count: number) {
+function openGachaDataPage(gachaType: string, showType: string) {
     gachaDataData.value.isShow = true;
 }
+// 同步数据
+function startSync() {
+    console.log("开始同步");
+}
+// 保存配置
+function saveOption(done: () => void) {
+    console.log("保存配置");
+    SaveOption(main.Option.createFrom(option.value)).then(() => {
+        done();
+    });
+}
+// 切换 uid
+function changeSelect(uid: string) {
+    console.log("切换了id");
+}
+
+async function init() {
+    console.log("初始化");
+    let o = await GetOption();
+    option.value.otherOption = o.otherOption;
+    option.value.showGacha = o.showGacha;
+    console.log("成功获取配置");
+}
+init();
 </script>
 
 <template>
-    <OptionMenu :data="optionMenuData" />
+    <OptionMenu :data="optionMenuData" @save-option="(done) => saveOption(done)" />
     <GachaData :data="gachaDataData" />
-    <ControlBar @open-option-menu="openOptionMenu" />
-    <GachaInfo :data="option" @open-gacha-data-page="openGachaDataPage" />
+    <ControlBar
+        @open-option-menu="openOptionMenu"
+        @start-sync="startSync"
+        @change-select="(uid) => changeSelect(uid)"
+    />
+    <GachaInfo :data="option" @pie-click="openGachaDataPage" />
 </template>

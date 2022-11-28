@@ -6,29 +6,27 @@
 <script lang="ts" setup>
 import { More, Sort } from "@element-plus/icons-vue";
 import { ref } from "vue";
+import { GetUids } from "../../wailsjs/go/main/App";
 const selectUid = ref("");
 var uids = new Array<string>();
 var isUidSelectorDisabled = ref(false);
-const syncButton = ref({
-    isCancel: false,
+const data = ref({
     isSyncying: false,
-    tip: "",
 });
-defineEmits<{
+const e = defineEmits<{
     (e: "open-option-menu"): void;
+    (e: "start-sync"): void;
+    (e: "change-select", uid: string): void;
 }>();
-function init() {
+async function init() {
     // 从后端获取uid
-    uids = new Array<string>();
+    uids = await GetUids();
     selectUid.value = uids[0];
     if (uids.length <= 1) {
         isUidSelectorDisabled.value = true;
     }
 }
-function sync() {
-    var data = syncButton.value;
-    data.isSyncying = !data.isSyncying;
-}
+
 init();
 </script>
 <template>
@@ -39,8 +37,11 @@ init();
             type="primary"
             id="sync_button"
             :icon="Sort"
-            :loading="syncButton.isSyncying"
-            @click="sync"
+            :loading="data.isSyncying"
+            @click="
+                data.isSyncying = true;
+                $emit('start-sync');
+            "
             circle
         >
         </el-button>
@@ -50,6 +51,7 @@ init();
             v-model="selectUid"
             id="uid_selector"
             placeholder="先点击左侧按钮同步"
+            @change="(uid:string) => $emit('change-select', uid)"
         >
             <el-option v-for="uid in uids" :key="uid" :label="uid" :value="uid" />
         </el-select>

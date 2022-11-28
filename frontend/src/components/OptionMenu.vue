@@ -5,7 +5,14 @@
 <script lang="ts" setup>
 import { Option } from "../type";
 // TODO: 增加 close 事件，实现关闭页面时保存 Option
+const e = defineEmits<{
+    (e: "save-option", done: () => void): void;
+}>();
+
 defineProps<{ data: { isShow: boolean; opt: Option } }>();
+const handleClose = (done: () => void) => {
+    e("save-option", done);
+};
 </script>
 <template>
     <!-- 设置侧栏 -->
@@ -15,6 +22,7 @@ defineProps<{ data: { isShow: boolean; opt: Option } }>();
         v-model="data.isShow"
         direction="rtl"
         title="选项"
+        :before-close="handleClose"
     >
         <!-- 显示祈愿 -->
         <el-card>

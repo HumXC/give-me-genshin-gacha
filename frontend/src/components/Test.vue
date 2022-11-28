@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { GetMsg, PutMsg } from "../../wailsjs/go/main/Bridge";
+
 import { ref } from "vue";
 import { type } from "os";
 
