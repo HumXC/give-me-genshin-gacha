@@ -35,9 +35,13 @@ type ShowGacha struct {
 	Permanent bool `json:"permanent"`
 	Start     bool `json:"start"`
 }
+type ControlBar struct {
+	SelectedUid string `json:"selectedUid"`
+}
 type Option struct {
 	ShowGacha   ShowGacha   `json:"showGacha"`
 	OtherOption OtherOption `json:"otherOption"`
+	ControlBar  ControlBar  `json:"controlBar"`
 }
 
 type Message struct {

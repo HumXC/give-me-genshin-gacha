@@ -11,6 +11,9 @@ export interface Option {
         useProxy: boolean;
         darkTheme: boolean;
     };
+    controlBar: {
+        selectedUid: string;
+    };
 }
 
 // 饼图使用的数据

@@ -1,5 +1,17 @@
 export namespace main {
 	
+	export class ControlBar {
+	    selectedUid: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ControlBar(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.selectedUid = source["selectedUid"];
+	    }
+	}
 	export class Message {
 	    type: string;
 	    msg: string;
@@ -51,6 +63,7 @@ export namespace main {
 	export class Option {
 	    showGacha: ShowGacha;
 	    otherOption: OtherOption;
+	    controlBar: ControlBar;
 	
 	    static createFrom(source: any = {}) {
 	        return new Option(source);
@@ -60,6 +73,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.showGacha = this.convertValues(source["showGacha"], ShowGacha);
 	        this.otherOption = this.convertValues(source["otherOption"], OtherOption);
+	        this.controlBar = this.convertValues(source["controlBar"], ControlBar);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
