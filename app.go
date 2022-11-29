@@ -47,12 +47,13 @@ type Option struct {
 }
 type Message struct {
 	Type string `json:"type"`
-	Msg  string `jsson:"msg"`
+	Msg  string `json:"msg"`
 }
 
 type App struct {
 	ctx     context.Context
 	l       logger.Logger
+	proxy   *gacha.ProxyServer
 	DB      database.GachaDB
 	DataDir string
 	GameDir string
@@ -128,7 +129,29 @@ func (a *App) GetUids() []string {
 func (a *App) Sync(useProxy bool) string {
 	rawUrl := ""
 	if useProxy {
-
+		proxy, err := gacha.NewProxyServer()
+		if err != nil {
+			a.putErr("代理服务器创建失败", err)
+			return "fail"
+		}
+		a.proxy = proxy
+		err = proxy.Start()
+		runtime.EventsEmit(a.ctx, "proxy-started")
+		if err != nil {
+			a.putErr("代理服务器启动失败", err)
+			return "fail"
+		}
+		rawUrl = <-proxy.Url
+		a.proxy = nil
+		if rawUrl == "" {
+			return "cancel"
+		}
+		err = proxy.Stop()
+		runtime.EventsEmit(a.ctx, "proxy-stoped")
+		if err != nil {
+			a.putErr("代理服务器关闭失败", err)
+			return "fail"
+		}
 	} else {
 		url, err := gacha.GetRawURL(a.GameDir)
 		if err != nil {
@@ -153,6 +176,7 @@ func (a *App) Sync(useProxy bool) string {
 		if err.Error() == "authkey timeout" {
 			return "authkey timeout"
 		}
+		// TODO 疑难杂症
 		runtime.EventsEmit(a.ctx, "alert", Message{
 			Type: "warning",
 			Msg:  "从服务器获取数据时出现错误, 可能无法同步所有数据 - " + err.Error(),
@@ -177,6 +201,7 @@ func NewApp() *App {
 		l.Error(err.Error())
 	}
 	l.Info("使用了数据库: " + dbName)
+
 	return &App{
 		DB:      db,
 		l:       l,
@@ -189,8 +214,20 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	// 前端发来的关闭代理请求
+	runtime.EventsOn(a.ctx, "stop-proxy", func(optionalData ...interface{}) {
+		if a.proxy == nil {
+			return
+		}
+		err := a.proxy.Stop()
+		if err != nil {
+			a.putErr("关闭代理时出现错误", err)
+		}
+	})
 }
 
 func (a *App) shutdown(ctx context.Context) {
-
+	if a.proxy != nil {
+		_ = a.proxy.Stop()
+	}
 }

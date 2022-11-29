@@ -1,6 +1,7 @@
 package gacha
 
 import (
+	"net"
 	"strings"
 
 	"github.com/Trisia/gosysproxy"
@@ -8,16 +9,15 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-type AddHeader struct {
+type addHeader struct {
 	proxy.BaseAddon
 	url chan (string)
 }
 
-func (a *AddHeader) Requestheaders(f *proxy.Flow) {
+func (a *addHeader) Requestheaders(f *proxy.Flow) {
 	url := f.Request.URL.String()
 	if strings.HasPrefix(url, Api) {
 		a.url <- url
-		close(a.url)
 	}
 }
 func openProxyReg() (registry.Key, error) {
@@ -30,6 +30,17 @@ func SystemProxyAddr() (string, error) {
 		return "", nil
 	}
 	v, _, err := key.GetStringValue("ProxyServer")
+	if err != nil {
+		return "", nil
+	}
+	return v, nil
+}
+func SystemProxyOverride() (string, error) {
+	key, err := openProxyReg()
+	if err != nil {
+		return "", nil
+	}
+	v, _, err := key.GetStringValue("ProxyOverride")
 	if err != nil {
 		return "", nil
 	}
@@ -48,38 +59,26 @@ func IsEnableSystemProxy() (bool, error) {
 }
 
 type ProxyServer struct {
-	proxy              *proxy.Proxy
-	addon              *AddHeader
-	IsRunning          bool
-	defaultProxyAddr   string
-	defaultProxyEnable bool
+	proxy                *proxy.Proxy
+	Url                  chan (string)
+	IsRunning            bool
+	defaultProxyAddr     string
+	defaultProxyEnable   bool
+	defaultProxyOverride string
 }
 
 func (p *ProxyServer) Start() error {
 	addr, _ := SystemProxyAddr()
 	enable, _ := IsEnableSystemProxy()
+	override, _ := SystemProxyOverride()
 	p.defaultProxyAddr = addr
 	p.defaultProxyEnable = enable
-
-	opts := &proxy.Options{
-		Debug:             0,
-		Addr:              ":8080",
-		StreamLargeBodies: 1024 * 1024 * 5,
-	}
-	pro, err := proxy.NewProxy(opts)
-	if err != nil {
-		return err
-	}
-	addon := AddHeader{}
-	p.addon = &addon
-	pro.AddAddon(&addon)
-	p.proxy = pro
-	err = p.Start()
-	if err != nil {
-		return err
-	}
-	p.IsRunning = true
-	err = gosysproxy.SetGlobalProxy(addr)
+	p.defaultProxyOverride = override
+	go func() {
+		// TODO: 错误处理
+		p.proxy.Start()
+	}()
+	err := gosysproxy.SetGlobalProxy(p.proxy.Opts.Addr, override)
 	if err != nil {
 		return err
 	}
@@ -87,17 +86,20 @@ func (p *ProxyServer) Start() error {
 	if err != nil {
 		return err
 	}
+	p.IsRunning = true
 	return nil
 }
 
 func (p *ProxyServer) Stop() error {
+	defer recover()
+	close(p.Url)
 	if !p.defaultProxyEnable {
 		err := gosysproxy.Off()
 		if err != nil {
 			return err
 		}
 	}
-	err := gosysproxy.SetGlobalProxy(p.defaultProxyAddr)
+	err := gosysproxy.SetGlobalProxy(p.defaultProxyAddr, p.defaultProxyOverride)
 	if err != nil {
 		return err
 	}
@@ -114,6 +116,41 @@ func (p *ProxyServer) Stop() error {
 	return nil
 }
 
-func (p *ProxyServer) GetUrl() string {
-	return <-p.addon.url
+func NewProxyServer() (*ProxyServer, error) {
+	freeAddr, err := GetFreeAddr()
+	if err != nil {
+		return nil, err
+	}
+	opts := &proxy.Options{
+		Debug:             0,
+		Addr:              freeAddr,
+		StreamLargeBodies: 1024 * 1024 * 5,
+	}
+	pro, err := proxy.NewProxy(opts)
+	if err != nil {
+		return nil, err
+	}
+	addon := &addHeader{
+		url: make(chan string),
+	}
+	pro.AddAddon(addon)
+
+	p := &ProxyServer{
+		Url:   addon.url,
+		proxy: pro,
+	}
+	return p, nil
+}
+func GetFreeAddr() (string, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return "", err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return "", err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).String(), nil
 }

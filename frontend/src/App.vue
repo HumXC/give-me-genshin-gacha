@@ -3,7 +3,6 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, ref, Ref } from "vue";
 import { GetOption, SaveOption, Sync } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
-import { WindowGetSize } from "../wailsjs/runtime/runtime";
 import ControlBar from "./components/ControlBar.vue";
 import GachaData from "./components/GachaData.vue";
 import GachaInfo from "./components/GachaInfo.vue";
@@ -48,10 +47,12 @@ function openGachaDataPage(gachaType: string, showType: string) {
     gachaDataData.value.isShow = true;
 }
 // 同步数据
-async function startSync(done: () => void) {
+async function startSync(done: () => void, useProxy: boolean = false) {
     console.log("开始同步");
-    ElMessage.info("正在同步哦");
-    let result = await Sync(option.value.otherOption.useProxy);
+    if (!useProxy) {
+        useProxy = option.value.otherOption.useProxy;
+    }
+    let result = await Sync(useProxy);
     switch (result) {
         case "authkey timeout":
             ElMessageBox.confirm("要使用代理方式重新同步吗?", "链接已经过期", {
@@ -67,7 +68,7 @@ async function startSync(done: () => void) {
                     });
                 })
                 .then(() => {
-                    done();
+                    startSync(done, true);
                 });
             break;
 
@@ -76,14 +77,12 @@ async function startSync(done: () => void) {
             ElMessage.success("同步完成");
             controlBarRefresh.value();
             break;
-        case "fail":
+        case "cancel":
+            done();
             break;
     }
 }
-setInterval(async () => {
-    let s = await WindowGetSize();
-    console.log(s.w + " - " + s.h);
-}, 1000);
+
 // 保存配置
 function saveOption(done: (() => void) | void) {
     console.log("保存配置");

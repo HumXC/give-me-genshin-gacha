@@ -3,7 +3,6 @@ package database
 import (
 	"bytes"
 	"database/sql"
-	"errors"
 	"fmt"
 	"give-me-genshin-gacha/gacha"
 	"strings"
@@ -24,7 +23,8 @@ const (
         lang TEXT,
         item_type TEXT,
         rank_type TEXT,
-        id TEXT PRIMARY KEY
+        id TEXT,
+		i INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT
 	)`
 	INSERT_ITEM = `
 	INSERT INTO gacha  (
@@ -127,15 +127,11 @@ type DB struct {
 	*sql.DB
 }
 
-func genError(err error) error {
-	return errors.New("Database Error: \n\t" + err.Error())
-}
-
 func (d *DB) GetLastIDs() (map[string]map[string]string, error) {
 	m := make(map[string]map[string]string)
 	rows, err := d.Query(GET_LAST_ID)
 	if err != nil {
-		return nil, genError(err)
+		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -146,7 +142,7 @@ func (d *DB) GetLastIDs() (map[string]map[string]string, error) {
 		)
 		err := rows.Scan(&uid, &gachaType, &id)
 		if err != nil {
-			return nil, genError(err)
+			return nil, err
 		}
 		if _, ok := m[uid]; !ok {
 			m[uid] = make(map[string]string)
@@ -183,7 +179,7 @@ func (d *DB) Add(items []gacha.RespDataListItem) error {
 	s := b.String()
 	_, err := d.Exec(INSERT_ITEM + s)
 	if err != nil {
-		return genError(err)
+		return err
 	}
 	return nil
 }
@@ -348,11 +344,11 @@ func (d *DB) GetOldest(uid, gachaType string) (GachaItem, error) {
 func NewDB(name string) (GachaDB, error) {
 	db, err := sql.Open("sqlite3", name)
 	if err != nil {
-		return nil, genError(err)
+		return nil, err
 	}
 	_, err = db.Exec(INIT_TABLE)
 	if err != nil {
-		return nil, genError(err)
+		return nil, err
 	}
 	return &DB{
 		db,

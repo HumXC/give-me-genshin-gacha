@@ -148,6 +148,7 @@ func (f *Fecher) Get(lastIDs map[string]map[string]string) (*[]RespDataListItem,
 			return &result, err
 		}
 		result = append(result, *r...)
+		time.Sleep(500 * time.Millisecond)
 	}
 	return &result, nil
 }
