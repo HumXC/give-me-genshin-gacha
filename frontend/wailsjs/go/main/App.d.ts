@@ -9,3 +9,5 @@ export function GetPieDatas():Promise<void>;
 export function GetUids():Promise<Array<string>>;
 
 export function SaveOption(arg1:main.Option):Promise<void>;
+
+export function Sync(arg1:boolean):Promise<string>;

@@ -1,9 +1,9 @@
 html {
-    background: rgb(235, 235, 235);
+    background: rgba(255, 255, 255, 0.671);
     text-align: center;
     color: transparent;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(100px);
+    backdrop-filter: blur(100px);
 }
 
 body {

@@ -16,20 +16,21 @@ func main() {
 	app := NewApp()
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "give-me-genshin-gacha",
-		Width:  380,
-		Height: 510,
+		Title:     "give-me-genshin-gacha",
+		Width:     388,
+		Height:    518,
+		MinWidth:  388,
+		MinHeight: 518,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		OnStartup: app.startup,
+		OnStartup:  app.startup,
+		OnShutdown: app.shutdown,
 		Bind: []interface{}{
 			app,
-			app.Bridge,
 		},
-		MinWidth:  380,
-		MinHeight: 510,
-	})
+	},
+	)
 
 	if err != nil {
 		println("Error:", err.Error())

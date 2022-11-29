@@ -1,16 +1,16 @@
 package gacha
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/logger"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 var GachaType map[string]string
@@ -66,11 +66,7 @@ type Response struct {
 type Fecher struct {
 	Uid string
 	url *url.URL
-	l   logger.Logger
-}
-
-func genError(err error) error {
-	return errors.New("Fecher error: \n\t" + err.Error())
+	ctx context.Context
 }
 
 // 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
@@ -87,26 +83,26 @@ func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]str
 	query.Set("gacha_type", gachaTypeNum)
 	for {
 		flag := false
-		f.l.Info(fmt.Sprintf("正在获取 [%s] 第 %d 页", ParseGachaType(gachaTypeNum), page))
+		runtime.LogInfof(f.ctx, "正在获取 [%s] 第 %d 页", ParseGachaType(gachaTypeNum), page)
 		query.Set("page", strconv.Itoa(page))
 		query.Set("end_id", endID)
 		f.url.RawQuery = query.Encode()
 		url_ := f.url.String()
 		resp, err := http.DefaultClient.Get(url_)
 		if err != nil {
-			return &list, genError(err)
+			return &list, err
 		}
 		jsonData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return &list, genError(err)
+			return &list, err
 		}
 		var r Response
 		err = json.Unmarshal(jsonData, &r)
 		if err != nil {
-			return &list, genError(err)
+			return &list, err
 		}
 		if r.Message != "OK" {
-			return &list, genError(errors.New("Api error: " + r.Message))
+			return &list, errors.New(r.Message)
 		}
 		if len(r.Data.List) == 0 {
 			break
@@ -156,7 +152,7 @@ func (f *Fecher) Get(lastIDs map[string]map[string]string) (*[]RespDataListItem,
 	return &result, nil
 }
 
-func NewFetcher(logger logger.Logger, rawURL string) (*Fecher, error) {
+func NewFetcher(ctx context.Context, rawURL string) (*Fecher, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
@@ -168,6 +164,6 @@ func NewFetcher(logger logger.Logger, rawURL string) (*Fecher, error) {
 	return &Fecher{
 		Uid: "",
 		url: u,
-		l:   logger,
+		ctx: ctx,
 	}, nil
 }

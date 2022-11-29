@@ -113,3 +113,7 @@ func (p *ProxyServer) Stop() error {
 	p.proxy = nil
 	return nil
 }
+
+func (p *ProxyServer) GetUrl() string {
+	return <-p.addon.url
+}

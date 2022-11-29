@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"give-me-genshin-gacha/database"
+	"give-me-genshin-gacha/gacha"
 	"io"
 	"os"
 	"path"
 
 	"github.com/wailsapp/wails/v2/pkg/logger"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // 前端定义和使用的数据, 应该与下面文件里的定义相同
@@ -43,36 +45,27 @@ type Option struct {
 	OtherOption OtherOption `json:"otherOption"`
 	ControlBar  ControlBar  `json:"controlBar"`
 }
-
 type Message struct {
 	Type string `json:"type"`
-	Msg  string `json:"msg"`
-} // end
-
-type Bridge struct {
-	c chan (Message)
-}
-
-// 发送一条消息，一般由后端调用
-func (b *Bridge) PutMsg(m Message) {
-	b.c <- m
-}
-
-// 阻塞接受消息，一般由前端调用
-func (b *Bridge) GetMsg() Message {
-	m := <-b.c
-	return m
+	Msg  string `jsson:"msg"`
 }
 
 type App struct {
 	ctx     context.Context
 	l       logger.Logger
 	DB      database.GachaDB
-	Bridge  *Bridge
 	DataDir string
 	GameDir string
 }
 
+func (a *App) putErr(info string, err error) {
+	m := fmt.Sprint(info, "-", err)
+	runtime.EventsEmit(a.ctx, "alert", Message{
+		Type: "error",
+		Msg:  m,
+	})
+	runtime.LogError(a.ctx, m)
+}
 func (a *App) GetOption() Option {
 	name := path.Join(a.DataDir, "option.json")
 	opt := Option{
@@ -88,22 +81,12 @@ func (a *App) GetOption() Option {
 	defer f.Close()
 	d, err := io.ReadAll(f)
 	if err != nil {
-		m := fmt.Sprintf("加载配置文件时出现错误: %s", err.Error())
-		a.Bridge.PutMsg(Message{
-			Type: "error",
-			Msg:  m,
-		})
-		a.l.Error(m)
+		a.putErr("加载配置文件时出现错误", err)
 		return opt
 	}
 	err = json.Unmarshal(d, &opt)
 	if err != nil {
-		m := fmt.Sprintf("加载配置文件时出现错误: %s", err.Error())
-		a.Bridge.PutMsg(Message{
-			Type: "error",
-			Msg:  m,
-		})
-		a.l.Error(m)
+		a.putErr("加载配置文件时出现错误", err)
 	}
 	return opt
 }
@@ -111,53 +94,76 @@ func (a *App) SaveOption(opt Option) {
 	name := path.Join(a.DataDir, "option.json")
 	b, err := json.Marshal(opt)
 	if err != nil {
-		m := fmt.Sprintf("保存配置文件时出现错误: %s", err.Error())
-		a.Bridge.PutMsg(Message{
-			Type: "error",
-			Msg:  m,
-		})
-		a.l.Error(m)
+		a.putErr("保存配置文件时出现错误", err)
 		return
 	}
 	err = os.Remove(name)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			m := fmt.Sprintf("保存配置文件时出现错误: %s", err.Error())
-			a.Bridge.PutMsg(Message{
-				Type: "error",
-				Msg:  m,
-			})
-			a.l.Error(m)
+			a.putErr("保存配置文件时出现错误", err)
 			return
 		}
 	}
 	f, err := os.Create(name)
 	if err != nil {
-		m := fmt.Sprintf("保存配置文件时出现错误: %s", err.Error())
-		a.Bridge.PutMsg(Message{
-			Type: "error",
-			Msg:  m,
-		})
-		a.l.Error(m)
+		a.putErr("保存配置文件时出现错误", err)
 		return
 	}
 	defer f.Close()
 	f.Write(b)
 }
 func (a *App) GetPieDatas() {
-
 }
 func (a *App) GetUids() []string {
 	r, err := a.DB.GetUids()
 	if err != nil {
-		a.Bridge.PutMsg(Message{
-			Type: "error",
-			Msg:  "无法获取 uid: " + err.Error(),
-		})
+		a.putErr("无法获取 uid", err)
 		return nil
 	}
 	a.l.Info(fmt.Sprintf("获取到数据库中存在的 uid: %v", r))
 	return r
+}
+
+// 从服务器同步祈愿数据到本地数据库, 如果成功返回 true
+func (a *App) Sync(useProxy bool) string {
+	rawUrl := ""
+	if useProxy {
+
+	} else {
+		url, err := gacha.GetRawURL(a.GameDir)
+		if err != nil {
+			a.putErr("无法获取祈愿链接", err)
+			return "fail"
+		}
+		rawUrl = url
+	}
+
+	fetcher, err := gacha.NewFetcher(a.ctx, rawUrl)
+	if err != nil {
+		a.putErr("无法创建爬虫", err)
+		return "fail"
+	}
+	lastIds, err := a.DB.GetLastIDs()
+	if err != nil {
+		a.putErr("无法从数据库获取最新的物品", err)
+		return "fail"
+	}
+	items, err := fetcher.Get(lastIds)
+	if err != nil {
+		if err.Error() == "authkey timeout" {
+			return "authkey timeout"
+		}
+		runtime.EventsEmit(a.ctx, "alert", Message{
+			Type: "warning",
+			Msg:  "从服务器获取数据时出现错误, 可能无法同步所有数据 - " + err.Error(),
+		})
+	}
+	err = a.DB.Add(*items)
+	if err != nil {
+		a.putErr("写入数据库失败", err)
+		return "fail"
+	}
+	return ""
 }
 
 // NewApp creates a new App application struct
@@ -175,14 +181,16 @@ func NewApp() *App {
 		DB:      db,
 		l:       l,
 		DataDir: dataDir,
-		Bridge: &Bridge{
-			c: make(chan Message),
-		},
 	}
 }
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
+
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+}
+
+func (a *App) shutdown(ctx context.Context) {
+
 }

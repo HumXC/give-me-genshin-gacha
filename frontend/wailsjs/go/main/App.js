@@ -17,3 +17,7 @@ export function GetUids() {
 export function SaveOption(arg1) {
   return window['go']['main']['App']['SaveOption'](arg1);
 }
+
+export function Sync(arg1) {
+  return window['go']['main']['App']['Sync'](arg1);
+}

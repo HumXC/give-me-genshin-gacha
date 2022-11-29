@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { init, EChartsOption, use, ElementEvent } from "echarts";
+import { init } from "echarts";
 import { ElCard } from "element-plus";
 import { onMounted, ref } from "vue";
 import { gachaTypeToName } from "../main";

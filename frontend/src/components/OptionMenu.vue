@@ -4,14 +4,13 @@
 
 <script lang="ts" setup>
 import { Option } from "../type";
-// TODO: 增加 close 事件，实现关闭页面时保存 Option
 const e = defineEmits<{
-    (e: "save-option", done: () => void): void;
+    (e: "closing", done: () => void): void;
 }>();
 
-defineProps<{ data: { isShow: boolean; opt: Option } }>();
+const props = defineProps<{ status: { isShow: boolean }; option: Option }>();
 const handleClose = (done: () => void) => {
-    e("save-option", done);
+    e("closing", done);
 };
 </script>
 <template>
@@ -19,7 +18,7 @@ const handleClose = (done: () => void) => {
     <el-drawer
         style="text-align: left"
         size="250"
-        v-model="data.isShow"
+        v-model="status.isShow"
         direction="rtl"
         title="选项"
         :before-close="handleClose"
@@ -33,19 +32,19 @@ const handleClose = (done: () => void) => {
             </template>
             <div class="switch-item">
                 <span>角色活动祈愿</span>
-                <el-switch class="switch" v-model="data.opt.showGacha.roleUp" />
+                <el-switch class="switch" v-model="option.showGacha.roleUp" />
             </div>
             <div class="switch-item">
                 <span>武器活动祈愿</span>
-                <el-switch class="switch" v-model="data.opt.showGacha.armsUp" />
+                <el-switch class="switch" v-model="option.showGacha.armsUp" />
             </div>
             <div class="switch-item">
                 <span>常驻祈愿</span>
-                <el-switch class="switch" v-model="data.opt.showGacha.permanent" />
+                <el-switch class="switch" v-model="option.showGacha.permanent" />
             </div>
             <div class="switch-item">
                 <span>新手祈愿</span>
-                <el-switch class="switch" v-model="data.opt.showGacha.start" />
+                <el-switch class="switch" v-model="option.showGacha.start" />
             </div>
         </el-card>
         <br />
@@ -60,18 +59,18 @@ const handleClose = (done: () => void) => {
             <div class="switch-item">
                 <el-tooltip content="启动程序时自动同步数据" placement="top-start"
                     ><span>自动同步</span> </el-tooltip
-                ><el-switch class="switch" v-model="data.opt.otherOption.autoSync" />
+                ><el-switch class="switch" v-model="option.otherOption.autoSync" />
             </div>
 
             <div class="switch-item">
                 <el-tooltip content="同步时优先使用代理服务器获取祈愿链接" placement="top-start"
                     ><span>默认使用代理</span></el-tooltip
                 >
-                <el-switch class="switch" v-model="data.opt.otherOption.useProxy" />
+                <el-switch class="switch" v-model="option.otherOption.useProxy" />
             </div>
             <div class="switch-item">
                 <span>深色主题</span>
-                <el-switch class="switch" v-model="data.opt.otherOption.darkTheme" />
+                <el-switch class="switch" v-model="option.otherOption.darkTheme" />
             </div>
         </el-card>
     </el-drawer>

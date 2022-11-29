@@ -12,20 +12,6 @@ export namespace main {
 	        this.selectedUid = source["selectedUid"];
 	    }
 	}
-	export class Message {
-	    type: string;
-	    msg: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Message(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.type = source["type"];
-	        this.msg = source["msg"];
-	    }
-	}
 	export class OtherOption {
 	    autoSync: boolean;
 	    useProxy: boolean;

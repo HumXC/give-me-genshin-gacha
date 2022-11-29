@@ -50,3 +50,7 @@ export const GachaTypeWithName = new Map([
     ["200", "常驻祈愿"],
     ["100", "新手祈愿"],
 ]);
+export type Message = {
+    type: string;
+    msg: string;
+};

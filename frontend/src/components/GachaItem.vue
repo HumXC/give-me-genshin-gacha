@@ -2,8 +2,12 @@
     在 GachaData 中显示祈愿物品的组件
  -->
 <script lang="ts" setup>
-import { ref, onMounted } from "vue";
+import { onMounted, ref } from "vue";
+import l3bg from "../assets/images/l3.png";
+import l4bg from "../assets/images/l4.png";
+import l5bg from "../assets/images/l5.png";
 import { GachaLog } from "../type";
+
 // 进度条的颜色集合
 const colors = [
     { color: "#f56c6c", percentage: 20 },
@@ -14,10 +18,10 @@ const colors = [
     { color: "#7191b1", percentage: 100 },
 ];
 const backgroundImages = ref({
-    now: "url(" + "/src/assets/images/l3.png" + ")",
-    l5: "url(" + "/src/assets/images/l5.png" + ")",
-    l4: "url(" + "/src/assets/images/l4.png" + ")",
-    l3: "url(" + "/src/assets/images/l3.png" + ")",
+    now: "url(" + l3bg + ")",
+    l5: "url(" + l5bg + ")",
+    l4: "url(" + l4bg + ")",
+    l3: "url(" + l3bg + ")",
 });
 
 // 物品不同品质的颜色

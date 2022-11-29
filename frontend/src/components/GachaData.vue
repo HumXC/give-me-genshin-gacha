@@ -3,11 +3,10 @@
  -->
 
 <script lang="ts" setup>
-import GachaItem from "./GachaItem.vue";
 import { Close } from "@element-plus/icons-vue";
 import { ref } from "vue";
+import GachaItem from "./GachaItem.vue";
 const props = defineProps<{ data: { isShow: boolean } }>();
-
 const gachaLogs = ref([
     {
         uid: "111111111",
