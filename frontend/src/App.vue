@@ -3,11 +3,12 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { onMounted, ref, Ref } from "vue";
 import { GetOption, SaveOption, Sync } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
+import { WindowGetSize } from "../wailsjs/runtime/runtime";
 import ControlBar from "./components/ControlBar.vue";
 import GachaData from "./components/GachaData.vue";
 import GachaInfo from "./components/GachaInfo.vue";
 import OptionMenu from "./components/OptionMenu.vue";
-import { setWindow } from "./main";
+import { setWindowSize } from "./main";
 import { Option } from "./type";
 
 // 配置文件
@@ -79,6 +80,10 @@ async function startSync(done: () => void) {
             break;
     }
 }
+setInterval(async () => {
+    let s = await WindowGetSize();
+    console.log(s.w + " - " + s.h);
+}, 1000);
 // 保存配置
 function saveOption(done: (() => void) | void) {
     console.log("保存配置");
@@ -109,7 +114,7 @@ onMounted(async () => {
     option.value.controlBar = o.controlBar;
     console.log("成功获取配置");
     controlBarRefresh.value(o.otherOption.autoSync);
-    setWindow(option.value);
+    setWindowSize(o);
 });
 </script>
 

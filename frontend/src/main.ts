@@ -1,7 +1,7 @@
 import ElementPlus, { ElMessage, MessageParams } from "element-plus";
 import "element-plus/dist/index.css";
-import { createApp, watch } from "vue";
-import { EventsOn } from "../wailsjs/runtime/runtime";
+import { createApp } from "vue";
+import { EventsOn, WindowCenter, WindowSetSize } from "../wailsjs/runtime/runtime";
 import App from "./App.vue";
 import { GachaTypeWithName, Message, Option } from "./type";
 
@@ -52,13 +52,30 @@ EventsOn("alert", (message: Message) => {
     ElMessage(show);
 });
 
-export function setWindow(option: Option) {
-    watch(option.showGacha, (data: any) => {
-        let count = 0;
-        for (const key in data) {
-            if (data[key] === true) {
-                count++;
-            }
+export async function setWindowSize(option: Option) {
+    // 设置窗口大小
+    let count = 0;
+    for (const key in option.showGacha) {
+        if ((<any>option.showGacha)[key] === true) {
+            count++;
         }
-    });
+    }
+    let w = 0;
+    let h = 518;
+    switch (count) {
+        case 1:
+            w = 388;
+            break;
+
+        case 2:
+        case 4:
+            w = 770;
+            break;
+
+        case 3:
+            w = 1120;
+            break;
+    }
+    await WindowSetSize(w, h);
+    WindowCenter();
 }
