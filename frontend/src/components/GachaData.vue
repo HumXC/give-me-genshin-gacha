@@ -81,9 +81,20 @@ const gachaLogs = ref([
         id: "1665741960038126786",
     },
 ]);
+const count = ref(0);
+const load = () => {
+    console.log("load");
+    count.value += 10;
+};
 </script>
 <template>
-    <el-drawer size="100%" :show-close="false" v-model="data.isShow" direction="ttb">
+    <el-drawer
+        style="padding: 0px"
+        size="100%"
+        :show-close="false"
+        v-model="data.isShow"
+        direction="ttb"
+    >
         <template #title>
             <div class="title">
                 <span>角色活动祈愿</span>
@@ -92,12 +103,30 @@ const gachaLogs = ref([
                 </el-icon>
             </div>
         </template>
-        <div class="items" v-for="gachaLog in gachaLogs">
-            <GachaItem :gacha-log="gachaLog" />
-        </div>
+        <el-scrollbar height="100%"
+            ><div
+                class="item"
+                v-infinite-scroll="load"
+                infinite-scroll-delay="20"
+                infinite-scroll-distance="100"
+            >
+                <div v-for="i in count"><GachaItem :gacha-log="gachaLogs[0]" /></div></div
+        ></el-scrollbar>
     </el-drawer>
 </template>
 <style scoped>
+.item-list {
+    list-style: none;
+    padding: 0px;
+    padding-inline-start: 0px;
+    height: 100%;
+    margin: 0;
+    list-style: none;
+}
+.item {
+    height: 70px;
+    margin-right: 16px;
+}
 .title {
     position: relative;
     width: 100%;
@@ -110,7 +139,7 @@ const gachaLogs = ref([
     right: 10px;
 }
 .close-btn :hover {
-    color: aqua;
+    color: var(--el-color-primary);
     cursor: pointer;
 }
 </style>

@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -50,11 +49,21 @@ type Message struct {
 	Msg  string `json:"msg"`
 }
 
+type GachaPieTotals struct {
+	T301 []database.GachaTotal `json:"t301"`
+	T302 []database.GachaTotal `json:"t302"`
+	T200 []database.GachaTotal `json:"t200"`
+	T100 []database.GachaTotal `json:"t100"`
+}
+type GachaPieDate struct {
+	UsedCosts []database.GachaUsedCost `json:"usedCosts"`
+	Totals    GachaPieTotals           `json:"totals"`
+}
+
 type App struct {
 	ctx     context.Context
-	l       logger.Logger
 	proxy   *gacha.ProxyServer
-	DB      database.GachaDB
+	DB      *database.GachaDB
 	DataDir string
 	GameDir string
 }
@@ -113,16 +122,28 @@ func (a *App) SaveOption(opt Option) {
 	defer f.Close()
 	f.Write(b)
 }
-func (a *App) GetPieDatas() {
+
+// 饼图数据
+func (a *App) GetPieDatas(uid string) GachaPieDate {
+	result := GachaPieDate{}
+	r, err := a.DB.GetTotals(uid)
+	if err != nil {
+		return result
+	}
+	c, err := a.DB.GetUsedCost(uid)
+	if err != nil {
+		return result
+	}
+	result.UsedCosts = c
+	result.Totals.T301 = r["301"]
+	result.Totals.T302 = r["302"]
+	result.Totals.T200 = r["200"]
+	result.Totals.T100 = r["100"]
+
+	return result
 }
 func (a *App) GetUids() []string {
-	r, err := a.DB.GetUids()
-	if err != nil {
-		a.putErr("无法获取 uid", err)
-		return nil
-	}
-	a.l.Info(fmt.Sprintf("获取到数据库中存在的 uid: %v", r))
-	return r
+	return a.DB.Uids
 }
 
 // 从服务器同步祈愿数据到本地数据库, 如果成功返回 true
@@ -153,6 +174,14 @@ func (a *App) Sync(useProxy bool) string {
 			return "fail"
 		}
 	} else {
+		if a.GameDir == "" {
+			dir, err := gacha.GetGameDir()
+			if err != nil {
+				a.putErr("获取游戏目录失败", err)
+				return "fail"
+			}
+			a.GameDir = dir
+		}
 		url, err := gacha.GetRawURL(a.GameDir)
 		if err != nil {
 			a.putErr("无法获取祈愿链接", err)
@@ -176,35 +205,30 @@ func (a *App) Sync(useProxy bool) string {
 		if err.Error() == "authkey timeout" {
 			return "authkey timeout"
 		}
-		// TODO 疑难杂症
 		runtime.EventsEmit(a.ctx, "alert", Message{
 			Type: "warning",
 			Msg:  "从服务器获取数据时出现错误, 可能无法同步所有数据 - " + err.Error(),
 		})
 	}
-	err = a.DB.Add(*items)
+	err = a.DB.Add(fetcher.Uid, items)
 	if err != nil {
 		a.putErr("写入数据库失败", err)
 		return "fail"
 	}
-	return ""
+	return fetcher.Uid
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	execP, _ := os.Executable()
-	l := logger.NewDefaultLogger()
 	dataDir := path.Dir(execP)
 	dbName := path.Join(dataDir, "data.db")
 	db, err := database.NewDB(dbName)
 	if err != nil {
-		l.Error(err.Error())
+		panic(err)
 	}
-	l.Info("使用了数据库: " + dbName)
-
 	return &App{
 		DB:      db,
-		l:       l,
 		DataDir: dataDir,
 	}
 }

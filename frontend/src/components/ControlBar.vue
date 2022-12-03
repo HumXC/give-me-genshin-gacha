@@ -9,7 +9,7 @@ import { ref } from "vue";
 import { GetUids } from "../../wailsjs/go/main/App";
 import { Option } from "../type";
 // 选择框里已经选择的 uid
-var isUidSelectorDisabled = ref(false);
+var isUidSelectorDisabled = ref(true);
 const props = defineProps<{ option: Option }>();
 const data = ref({
     isSynchronizing: false,
@@ -20,20 +20,22 @@ const e = defineEmits<{
     (e: "sync-button-click", done: () => void): void;
     (e: "select-uid", uid: string): void;
 }>();
-defineExpose(refresh);
 function handleSync() {
     data.value.isSynchronizing = true;
     // 用于取消同步按钮的 loading 状态
     let done = () => {
         data.value.isSynchronizing = false;
+        refresh();
     };
     e("sync-button-click", done);
 }
-async function refresh(sync: boolean = false) {
+const refresh = async (sync: boolean = false) => {
     // 从后端获取uid
     let uids = await GetUids();
     data.value.uids = uids;
     if (uids.length != 0) {
+        console.log(props.option.controlBar.selectedUid);
+
         if (props.option.controlBar.selectedUid == "") {
             props.option.controlBar.selectedUid = uids[0];
         }
@@ -42,11 +44,14 @@ async function refresh(sync: boolean = false) {
     }
     if (uids.length <= 1) {
         isUidSelectorDisabled.value = true;
+    } else {
+        isUidSelectorDisabled.value = false;
     }
     if (sync) {
         handleSync();
     }
-}
+};
+defineExpose(refresh);
 </script>
 <template>
     <div style="height: 10px"></div>

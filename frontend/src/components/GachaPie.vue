@@ -3,16 +3,26 @@ import { init } from "echarts";
 import { ElCard } from "element-plus";
 import { onMounted, ref } from "vue";
 import { gachaTypeToName } from "../main";
-import { PieData } from "../type";
 
 // gachaType: 祈愿类型，showType: 显示类型
 // all 是点击饼图中心按钮时传递的参数，其他是点击饼图某一块传递对应的参数
 const emit = defineEmits<{
-    (e: "pie-click", gachaType: string, showType: string): void;
+    (e: "pie-click", gachaType: string): void;
 }>();
-const props = defineProps<{ data: PieData }>();
+const props = defineProps<{
+    data: {
+        gachaType: string;
+        usedCost: number;
+        items: Array<{
+            rankType: string;
+            itemType: string;
+            total: number;
+        }>;
+    };
+}>();
 const gachaName = ref(gachaTypeToName(props.data.gachaType));
-onMounted(() => {
+const rank3ItemTotal = ref("0/0");
+const refresh = () => {
     let d = props.data;
     let opt = {
         tooltip: {
@@ -41,39 +51,31 @@ onMounted(() => {
                 labelLine: {
                     show: false,
                 },
-                data: [
-                    { value: d.arms3Total, name: "三星武器" },
-                    { value: d.role4Total, name: "四星角色" },
-                    { value: d.arms4Total, name: "四星武器" },
-                    { value: d.role5Total, name: "五星角色" },
-                    { value: d.arms5Total, name: "五星武器" },
-                ],
+                data: [],
             },
         ],
     };
+    let total = 0;
+    d.items.forEach((e) => {
+        if (e.rankType == "3") {
+            total += e.total;
+            rank3ItemTotal.value = e.total.toString();
+        } else {
+            let data = <Array<{ value: number; name: string }>>opt.series?.[0].data;
+            data.push({
+                value: e.total,
+                name: e.rankType + "星" + e.itemType,
+            });
+            total += e.total;
+        }
+    });
+    rank3ItemTotal.value += "/" + total;
     let myChart = init(<HTMLElement>document.getElementById(gachaName.value));
     myChart.setOption(opt);
-    myChart.on("click", (p: any) => {
-        let type = "all";
-        switch (p.data.name) {
-            case "三星武器":
-                type = "arms3";
-                break;
-            case "四星武器":
-                type = "arms4";
-                break;
-            case "五星武器":
-                type = "arms5";
-                break;
-            case "四星角色":
-                type = "role4";
-                break;
-            case "五星角色":
-                type = "role5";
-                break;
-        }
-        emit("pie-click", props.data.gachaType, type);
-    });
+};
+defineExpose(refresh);
+onMounted(() => {
+    refresh();
 });
 </script>
 
@@ -84,11 +86,12 @@ onMounted(() => {
                 <span>{{ gachaName }}</span>
             </div>
         </template>
+        <span class="rank3-arms">3星: {{ rank3ItemTotal }}</span>
         <div :id="gachaName" class="chart-pie"></div>
         <el-tooltip show-after="1000" content="距上一次出五星的祈愿次数" placement="top">
             <el-button
                 class="used-num"
-                @click.prevent="$emit('pie-click', data.gachaType, 'all')"
+                @click.prevent="$emit('pie-click', data.gachaType)"
                 circle
                 >{{ data.usedCost }}</el-button
             >
@@ -96,6 +99,11 @@ onMounted(() => {
     </el-card>
 </template>
 <style scoped>
+.rank3-arms {
+    position: absolute;
+    left: 10px;
+    top: 70px;
+}
 .gacha-box {
     align-items: center;
     min-width: 340px;

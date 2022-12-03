@@ -55,9 +55,9 @@ const data = ref({
 onMounted(() => {
     var d = data.value;
     var g = props.gachaLog;
-    var date = new Date(g.time * 1000);
+    var date = new Date();
 
-    d.name = g.name;
+    d.name = "name";
     d.date =
         date.getFullYear() +
         "-" +

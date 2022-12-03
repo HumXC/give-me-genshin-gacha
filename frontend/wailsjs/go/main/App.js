@@ -6,8 +6,8 @@ export function GetOption() {
   return window['go']['main']['App']['GetOption']();
 }
 
-export function GetPieDatas() {
-  return window['go']['main']['App']['GetPieDatas']();
+export function GetPieDatas(arg1) {
+  return window['go']['main']['App']['GetPieDatas'](arg1);
 }
 
 export function GetUids() {

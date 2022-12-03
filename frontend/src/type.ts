@@ -1,38 +1,69 @@
 // 配置文件
-export interface Option {
+export class Option {
     showGacha: {
         roleUp: boolean;
         armsUp: boolean;
         permanent: boolean;
         start: boolean;
+    } = {
+        roleUp: false,
+        armsUp: false,
+        permanent: false,
+        start: false,
     };
     otherOption: {
         autoSync: boolean;
         useProxy: boolean;
         darkTheme: boolean;
+    } = {
+        autoSync: false,
+        useProxy: false,
+        darkTheme: false,
     };
     controlBar: {
         selectedUid: string;
+    } = {
+        selectedUid: "",
     };
 }
 
 // 饼图使用的数据
-export interface PieData {
-    usedCost: number; // 几发未出金
-    arms3Total: number; // 三星武器数量
-    role4Total: number; // 四星角色数量
-    arms4Total: number; // 四星武器数量
-    role5Total: number; // 五星角色数量
-    arms5Total: number; // 五星武器数量
-    gachaType: string; // 祈愿类型
+export class PieData {
+    usedCosts: Array<{
+        gachaType: string;
+        cost: number;
+    }> = []; // 几发未出金
+    tatols: {
+        t301: Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>;
+        t302: Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>;
+        t200: Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>;
+        t100: Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>;
+    } = {
+        t301: [],
+        t302: [],
+        t200: [],
+        t100: [],
+    };
 }
-
 // 一条完整的祈愿数据
 export interface GachaLog {
-    uid: string;
     gacha_type: string;
-    item_id: string;
-    count: string;
     time: number;
     name: string;
     lang: string;
@@ -40,6 +71,7 @@ export interface GachaLog {
     rank_type: string;
     id: string;
 }
+
 // 祈愿类型
 export type GachaType = "301" | "302" | "200" | "100" | "400";
 export const GachaTypeWithName = new Map([

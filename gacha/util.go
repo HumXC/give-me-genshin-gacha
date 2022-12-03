@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
+	"syscall"
 )
 
 const Api = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
@@ -15,13 +15,13 @@ const Api = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
 func GetGameDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", errors.New("无法获取用户目录: " + err.Error())
+		return "", errors.New("获取用户失败目录: " + err.Error())
 	}
 	// 读取原神日志文件
 	logFileName := path.Join(homeDir, "AppData", "LocalLow", "miHoYo", "原神", "output_log.txt")
 	logFile, err := os.Open(logFileName)
 	if err != nil {
-		return "", errors.New("无法读取游戏日志: " + err.Error())
+		return "", errors.New("读取游戏日志失败: " + err.Error())
 	}
 	defer logFile.Close()
 	logScanner := bufio.NewScanner(logFile)
@@ -46,21 +46,22 @@ func GetGameDir() (string, error) {
 		i := strings.LastIndex(line, searchName)
 		return line[12 : i+len(searchName)], nil
 	}
-	return "", errors.New("没有找到游戏目录, 尝试进入游戏后再运行")
+	return "", errors.New("没有找到游戏目录, 尝试进入游戏后再尝试")
 }
 
 // 从游戏目录中的网络缓存获取旅行者祈愿的 URL
 func GetRawURL(gameDataDir string) (string, error) {
 	// 读取网络日志
-	// TODO: 直接读取，而不是先使用 powershell 复制，powershell 启动缓慢
 	webCacheName := path.Join(gameDataDir, "webCaches", "Cache", "Cache_Data", "data_2")
-	exec.Command("powershell.exe", "/C", "Copy-Item", "\""+webCacheName+"\"", "temp").Output()
-
+	err := CopyFile(webCacheName, "temp")
+	if err != nil {
+		return "", errors.New("拷贝缓存失败: " + err.Error())
+	}
 	webCache, err := os.ReadFile("temp")
 	if err != nil {
 		return "", errors.New("读取缓存失败: " + err.Error())
 	}
-	// os.Remove("temp")
+	os.Remove("temp")
 	// temp 的数据由 “0” 分割
 	// 提取出 temp 里的 urll 字符串
 	var strEnd int
@@ -74,7 +75,6 @@ func GetRawURL(gameDataDir string) (string, error) {
 			}
 			continue
 		}
-
 		if strEnd == 0 {
 			continue
 		}
@@ -96,4 +96,34 @@ func GetRawURL(gameDataDir string) (string, error) {
 	return "", errors.New("没有找到祈愿链接，尝试在游戏里打开祈愿历史记录页面")
 }
 
-// TODO: 增加 以系统代理获取url的功能
+// 复制被占用的文件
+func CopyFile(src, dist string) error {
+	//参考，搜了很久。tnnd
+	// https://github.com/golang/go/issues/46164
+	// http://zplutor.github.io/2018/08/26/file-share-mode-and-access-rights/
+	path, err := syscall.UTF16PtrFromString(src)
+	if err != nil {
+		return err
+	}
+	newFile, err := os.Create(dist)
+	if err != nil {
+		return err
+	}
+	defer newFile.Close()
+	f, err := syscall.CreateFile(path, syscall.GENERIC_READ|syscall.GENERIC_WRITE, syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE|syscall.FILE_SHARE_DELETE, nil, syscall.OPEN_EXISTING, 0, 0)
+	if err != nil {
+		return err
+	}
+	b := make([]byte, 512)
+	for {
+		n, err := syscall.Read(f, b)
+		if n == 0 {
+			syscall.Close(f)
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		newFile.Write(b)
+	}
+}

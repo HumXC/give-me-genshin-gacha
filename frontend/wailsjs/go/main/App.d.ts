@@ -4,7 +4,7 @@ import {main} from '../models';
 
 export function GetOption():Promise<main.Option>;
 
-export function GetPieDatas():Promise<void>;
+export function GetPieDatas(arg1:string):Promise<main.GachaPieDate>;
 
 export function GetUids():Promise<Array<string>>;
 

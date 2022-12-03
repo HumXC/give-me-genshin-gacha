@@ -3,78 +3,120 @@
  -->
 <script lang="ts" setup>
 import { Ref, ref } from "vue";
+import { GetPieDatas } from "../../wailsjs/go/main/App";
 import { Option, PieData } from "../type";
 import Pie from "./GachaPie.vue";
 
-defineProps<{ option: Option }>();
+const props = defineProps<{ option: Option }>();
 // 打开 GachaData 页面
 defineEmits<{
-    (e: "pie-click", gachaType: string, showType: string): void;
+    (e: "pie-click", gachaType: string): void;
 }>();
-const gachaInfo301: Ref<PieData> = ref({
-    gachaType: "301",
-    usedCost: 30,
-    arms3Total: 32,
-    role4Total: 311,
-    arms4Total: 13,
-    arms5Total: 23,
-    role5Total: 2,
-});
 
-const gachaInfo302: Ref<PieData> = ref({
+const datas: Ref<PieData> = ref(new PieData());
+const refresh = async () => {
+    let d = await GetPieDatas(props.option.controlBar.selectedUid);
+    datas.value.usedCosts = d.usedCosts;
+    // 设置之间按钮的值
+    d.usedCosts.forEach((element) => {
+        switch (element.gachaType) {
+            case "301":
+                pie1.value.usedCost = element.cost;
+                break;
+            case "302":
+                pie2.value.usedCost = element.cost;
+                break;
+            case "200":
+                pie3.value.usedCost = element.cost;
+                break;
+            case "100":
+                pie4.value.usedCost = element.cost;
+                break;
+        }
+    });
+
+    pie1.value.items = d.totals.t301;
+    pie2.value.items = d.totals.t302;
+    pie3.value.items = d.totals.t200;
+    pie4.value.items = d.totals.t100;
+
+    refreshPie1.value();
+    refreshPie2.value();
+    refreshPie3.value();
+    refreshPie4.value();
+};
+defineExpose(refresh);
+const pie1 = ref({
+    gachaType: "301",
+    usedCost: 0,
+    items: new Array<{
+        rankType: string;
+        itemType: string;
+        total: number;
+    }>(),
+});
+const pie2 = ref({
     gachaType: "302",
-    usedCost: 80,
-    arms3Total: 32,
-    role4Total: 211,
-    arms4Total: 111,
-    arms5Total: 76,
-    role5Total: 28,
+    usedCost: 0,
+    items: new Array<{
+        rankType: string;
+        itemType: string;
+        total: number;
+    }>(),
 });
-const gachaInfo200: Ref<PieData> = ref({
+const pie3 = ref({
     gachaType: "200",
-    usedCost: 10,
-    arms3Total: 3552,
-    role4Total: 311,
-    arms4Total: 141,
-    arms5Total: 53,
-    role5Total: 51,
+    usedCost: 0,
+    items: new Array<{
+        rankType: string;
+        itemType: string;
+        total: number;
+    }>(),
 });
-const gachaInfo100: Ref<PieData> = ref({
+const pie4 = ref({
     gachaType: "100",
-    usedCost: 54,
-    arms3Total: 312,
-    role4Total: 311,
-    arms4Total: 131,
-    arms5Total: 213,
-    role5Total: 21,
+    usedCost: 0,
+    items: new Array<{
+        rankType: string;
+        itemType: string;
+        total: number;
+    }>(),
 });
+const refreshPie1 = ref(() => {});
+const refreshPie2 = ref(() => {});
+const refreshPie3 = ref(() => {});
+const refreshPie4 = ref(() => {});
 </script>
 <template>
     <!-- 祈愿概览 -->
     <div class="gacha-info">
         <!-- 角色活动祈愿 -->
         <Pie
-            :data="gachaInfo301"
-            @pie-click="(gachaType, showType) => $emit('pie-click', gachaType, showType)"
+            :data="pie1"
+            @pie-click="(gachaType) => $emit('pie-click', gachaType)"
             v-if="option.showGacha.roleUp"
+            ref="refreshPie1"
         />
         <!-- 武器活动祈愿 -->
         <Pie
-            :data="gachaInfo302"
-            @pie-click="(gachaType, showType) => $emit('pie-click', gachaType, showType)"
+            :data="pie2"
+            @pie-click="(gachaType) => $emit('pie-click', gachaType)"
             v-if="option.showGacha.armsUp"
+            ref="refreshPie2"
         />
         <!-- 常驻祈愿 -->
         <Pie
-            :data="gachaInfo200"
-            @pie-click="(gachaType, showType) => $emit('pie-click', gachaType, showType)"
+            :data="pie3"
+            @pie-click="(gachaType) => $emit('pie-click', gachaType)"
             v-if="option.showGacha.permanent"
+            ref="refreshPie3"
         />
         <!-- 新手祈愿 -->
         <Pie
-            :data="gachaInfo100"
-            @pie-click="(gachaType, showType) => $emit('pie-click', gachaType, showType)"
+            :data="pie4"
+            @pie-click="(gachaType) => $emit('pie-click', gachaType)"
             v-if="option.showGacha.start"
+            ref="refreshPie4"
         />
     </div>
 </template>

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"give-me-genshin-gacha/database"
 	"io"
 	"net/http"
 	"net/url"
@@ -71,7 +72,7 @@ type Fecher struct {
 
 // 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
 // lastIDs map[uid]map[gachaType][lastID]
-func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]string) (*[]RespDataListItem, error) {
+func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]string) ([]RespDataListItem, error) {
 	list := make([]RespDataListItem, 0)
 	page := 1
 	endID := "0"
@@ -90,19 +91,19 @@ func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]str
 		url_ := f.url.String()
 		resp, err := http.DefaultClient.Get(url_)
 		if err != nil {
-			return &list, err
+			return list, err
 		}
 		jsonData, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return &list, err
+			return list, err
 		}
 		var r Response
 		err = json.Unmarshal(jsonData, &r)
 		if err != nil {
-			return &list, err
+			return list, err
 		}
 		if r.Message != "OK" {
-			return &list, errors.New(r.Message)
+			return list, errors.New(r.Message)
 		}
 		if len(r.Data.List) == 0 {
 			break
@@ -112,23 +113,20 @@ func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]str
 		if _, ok := lastIDs[f.Uid]; !ok {
 			lastIDs[f.Uid] = make(map[string]string)
 		}
-
 		// 提取出"更新"的条目
 		for i, v := range l {
 			if f.Uid == "" {
 				f.Uid = v.Uid
 			}
-			if id, ok := lastIDs[v.Uid][gachaTypeNum]; !ok {
+			if id, ok := lastIDs[v.Uid][v.GachaType]; !ok {
 				break
 			} else if id != v.ID {
 				continue
 			}
-
 			list = append(list, l[:i]...)
 			flag = true
 			break
 		}
-
 		if flag {
 			break
 		}
@@ -136,21 +134,34 @@ func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]str
 		list = append(list, l...)
 		time.Sleep(1 * time.Second)
 	}
-	return &list, nil
+	return list, nil
 }
 
-func (f *Fecher) Get(lastIDs map[string]map[string]string) (*[]RespDataListItem, error) {
-	result := make([]RespDataListItem, 0)
+func (f *Fecher) Get(lastIDs map[string]map[string]string) ([]database.GachaItem, error) {
+	result := make([]database.GachaItem, 0)
 	for _, t := range GachaType {
 		r, err := f.getGacha(t, lastIDs)
 		if err != nil {
-			result = append(result, *r...)
-			return &result, err
+			return result, err
 		}
-		result = append(result, *r...)
+		for _, item := range r {
+			result = append(result, ConvertToDBItem(item))
+		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	return &result, nil
+	return result, nil
+}
+
+func ConvertToDBItem(i RespDataListItem) database.GachaItem {
+	return database.GachaItem{
+		GachaType: i.GachaType,
+		Time:      i.Time,
+		Name:      i.Name,
+		Lang:      i.Lang,
+		Itemtype:  i.Itemtype,
+		RankType:  i.RankType,
+		ID:        i.ID,
+	}
 }
 
 func NewFetcher(ctx context.Context, rawURL string) (*Fecher, error) {
