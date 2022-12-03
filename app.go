@@ -76,6 +76,14 @@ func (a *App) putErr(info string, err error) {
 	})
 	runtime.LogError(a.ctx, m)
 }
+func (a *App) GetNumWithLast(uid, gachaType, id string) int {
+	result, err := a.DB.GetNumWithLast(uid, gachaType, id)
+	if err != nil {
+		a.putErr("从数据库获取计数时出现错误", err)
+		return result
+	}
+	return result
+}
 func (a *App) GetOption() Option {
 	name := path.Join(a.DataDir, "option.json")
 	opt := Option{
@@ -121,6 +129,15 @@ func (a *App) SaveOption(opt Option) {
 	}
 	defer f.Close()
 	f.Write(b)
+}
+
+func (a *App) GetLogs(uid, gachaType string, num, page int) []database.GachaLog {
+	result, err := a.DB.GetLogs(uid, gachaType, num, page)
+	if err != nil {
+		a.putErr("从数据库获取记录时出现错误", err)
+		return make([]database.GachaLog, 0)
+	}
+	return result
 }
 
 // 饼图数据

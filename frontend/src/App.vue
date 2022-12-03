@@ -22,22 +22,27 @@ const optionMenuStatus = ref({
 // 控制祈愿数据页面
 const gachaDataData: Ref<{
     isShow: boolean;
-}> = ref(<{ isShow: boolean }>{
+    uid: string;
+    gachaType: string;
+}> = ref({
     isShow: false,
+    uid: "",
+    gachaType: "",
 });
 
-// 刷新各组件
+// 各组件导出的方法
 const refreshGachaInfo = ref(async () => {});
 const refreshControlBar = ref(async () => {});
 
+const funcGachaData = ref({
+    show: (uid: string, gachaType: string) => {},
+    refresh: () => {},
+});
 const refresh = async () => {
     await refreshControlBar.value();
     await refreshGachaInfo.value();
+    funcGachaData.value.refresh();
 };
-// 打卡详细数据页面
-function showGachaDataPage(gachaType: string) {
-    gachaDataData.value.isShow = true;
-}
 
 // 同步数据
 async function startSync(done: () => void, useProxy: boolean = false) {
@@ -117,14 +122,17 @@ onMounted(async () => {
             :option="option"
             :status="optionMenuStatus"
             @closing="(done) => saveOption(done)" />
-        <GachaData :data="gachaDataData" />
+        <GachaData :data="gachaDataData" ref="funcGachaData" />
         <ControlBar
             :option="option"
             @option-button-click="optionMenuStatus.isShow = true"
             @sync-button-click="(done) => startSync(done)"
             @select-uid="(uid) => changeSelectedUid(uid)"
             ref="refreshControlBar" />
-        <GachaInfo :option="option" @pie-click="showGachaDataPage" ref="refreshGachaInfo" />
+        <GachaInfo
+            :option="option"
+            @pie-click="(gachaType) => funcGachaData.show(option.controlBar.selectedUid, gachaType)"
+            ref="refreshGachaInfo" />
         <div style="height: 10px"
     /></el-scrollbar>
 </template>

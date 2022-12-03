@@ -1,5 +1,29 @@
 export namespace database {
 	
+	export class GachaLog {
+	    gachaType: string;
+	    time: string;
+	    name: string;
+	    lang: string;
+	    itemType: string;
+	    rankType: string;
+	    id: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GachaLog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.gachaType = source["gachaType"];
+	        this.time = source["time"];
+	        this.name = source["name"];
+	        this.lang = source["lang"];
+	        this.itemType = source["itemType"];
+	        this.rankType = source["rankType"];
+	        this.id = source["id"];
+	    }
+	}
 	export class GachaTotal {
 	    total: number;
 	    itemType: string;

@@ -63,12 +63,12 @@ export class PieData {
 }
 // 一条完整的祈愿数据
 export interface GachaLog {
-    gacha_type: string;
-    time: number;
+    gachaType: string;
+    time: string;
     name: string;
     lang: string;
-    item_type: string;
-    rank_type: string;
+    itemType: string;
+    rankType: string;
     id: string;
 }
 

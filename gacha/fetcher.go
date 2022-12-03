@@ -137,8 +137,8 @@ func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]str
 	return list, nil
 }
 
-func (f *Fecher) Get(lastIDs map[string]map[string]string) ([]database.GachaItem, error) {
-	result := make([]database.GachaItem, 0)
+func (f *Fecher) Get(lastIDs map[string]map[string]string) ([]database.GachaLog, error) {
+	result := make([]database.GachaLog, 0)
 	for _, t := range GachaType {
 		r, err := f.getGacha(t, lastIDs)
 		if err != nil {
@@ -152,8 +152,8 @@ func (f *Fecher) Get(lastIDs map[string]map[string]string) ([]database.GachaItem
 	return result, nil
 }
 
-func ConvertToDBItem(i RespDataListItem) database.GachaItem {
-	return database.GachaItem{
+func ConvertToDBItem(i RespDataListItem) database.GachaLog {
+	return database.GachaLog{
 		GachaType: i.GachaType,
 		Time:      i.Time,
 		Name:      i.Name,

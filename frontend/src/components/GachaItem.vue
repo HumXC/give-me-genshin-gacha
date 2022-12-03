@@ -3,86 +3,79 @@
  -->
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
-import l3bg from "../assets/images/l3.png";
-import l4bg from "../assets/images/l4.png";
-import l5bg from "../assets/images/l5.png";
+import { GetNumWithLast } from "../../wailsjs/go/main/App";
+import rank3bg from "../assets/images/rank3.png";
+import rank4bg from "../assets/images/rank4.png";
+import rank5bg from "../assets/images/rank5.png";
 import { GachaLog } from "../type";
 
 // 进度条的颜色集合
-const colors = [
-    { color: "#f56c6c", percentage: 20 },
-    { color: "#e6a23c", percentage: 40 },
-    { color: "#5cb87a", percentage: 60 },
-    { color: "#1989fa", percentage: 80 },
-    { color: "#6f7ad3", percentage: 99 },
-    { color: "#7191b1", percentage: 100 },
-];
+const progressColor = {
+    // 进度条底色
+    bg: {
+        now: "#557de1",
+        rank4: "#8f62d4",
+        rank5: "#da8d4a",
+    },
+    // 进度条进度的颜色
+    in: {
+        now: "#557de1",
+        rank4: "#d9a2e7de",
+        rank5: "#ffd324",
+    },
+};
 const backgroundImages = ref({
-    now: "url(" + l3bg + ")",
-    l5: "url(" + l5bg + ")",
-    l4: "url(" + l4bg + ")",
-    l3: "url(" + l3bg + ")",
+    now: "url(" + rank3bg + ")",
+    rank5: "url(" + rank5bg + ")",
+    rank4: "url(" + rank4bg + ")",
 });
 
 // 物品不同品质的颜色
 const itemColors = {
-    l5: {
+    rank5: {
         text: "#edeff1",
         bg: "#f39d53",
     },
-    l4: {
+    rank4: {
         text: "#e7e7e7",
         bg: "#a37dde",
     },
-    l3: {
+    rank3: {
         text: "#e7e7e7",
         bg: "#5ba8d6",
     },
 };
-const props = defineProps<{ gachaLog: GachaLog }>();
+const props = defineProps<{ uid: string; gachaLog: GachaLog }>();
 const data = ref({
-    id: "",
-    name: "",
-    date: "",
     // 距离上一次同等品质的物品出货所花费的次数
     usedCost: 0,
     assess: "",
     percentage: 100,
-    bgColor: itemColors.l3.bg,
-    textColor: itemColors.l3.text,
+    bgColor: itemColors.rank3.bg,
+    textColor: itemColors.rank3.text,
 });
 
-onMounted(() => {
+onMounted(async () => {
     var d = data.value;
     var g = props.gachaLog;
-    var date = new Date();
-
-    d.name = "name";
-    d.date =
-        date.getFullYear() +
-        "-" +
-        date.getMonth() +
-        "-" +
-        date.getDate() +
-        " " +
-        date.getHours() +
-        ":" +
-        date.getMinutes();
-    if (g.rank_type != "3") {
+    if (g.rankType != "3") {
         // 四星，五星物品显示额外内容
-        // TODO: 从后端查询
-        d.usedCost = 40;
-        d.percentage = (d.usedCost / 90) * 100;
-        if (g.rank_type === "4") {
-            d.bgColor = itemColors.l4.bg;
-            d.textColor = itemColors.l4.text;
-            backgroundImages.value.now = backgroundImages.value.l4;
+        d.usedCost = await GetNumWithLast(props.uid, props.gachaLog.gachaType, props.gachaLog.id);
+        if (g.rankType === "4") {
+            progressColor.bg.now = progressColor.bg.rank4;
+            progressColor.in.now = progressColor.in.rank4;
+            d.percentage = (d.usedCost / 10) * 100;
+            d.bgColor = itemColors.rank4.bg;
+            d.textColor = itemColors.rank4.text;
+            backgroundImages.value.now = backgroundImages.value.rank4;
         } else {
-            d.bgColor = itemColors.l5.bg;
-            d.textColor = itemColors.l5.text;
-            backgroundImages.value.now = backgroundImages.value.l5;
+            progressColor.bg.now = progressColor.bg.rank5;
+            progressColor.in.now = progressColor.in.rank5;
+            d.percentage = (d.usedCost / 90) * 100;
+            d.bgColor = itemColors.rank5.bg;
+            d.textColor = itemColors.rank5.text;
+            backgroundImages.value.now = backgroundImages.value.rank5;
         }
-    } else {
     }
 });
 </script>
@@ -90,18 +83,18 @@ onMounted(() => {
     <div class="item">
         <div class="icon"></div>
         <div style="width: 10px" />
-        <div class="info" :id="data.id">
+        <div class="info" :id="gachaLog.id">
             <div class="item-name">
-                <span>{{ data.name }}</span>
-                <span> &nbsp&nbsp</span>
+                <span>{{ gachaLog.name }}</span>
+                <span> &nbsp</span>
                 <span v-if="data.usedCost != 0">{{ data.usedCost }}</span>
-                <span class="date">{{ data.date }}</span>
+                <span class="time">{{ gachaLog.time }}</span>
             </div>
             <el-progress
                 :text-inside="true"
                 :stroke-width="24"
                 :percentage="data.percentage"
-                :color="colors"
+                :color="progressColor.in.now"
                 status="success"
                 ><span>{{ data.assess }}</span></el-progress
             >
@@ -109,6 +102,9 @@ onMounted(() => {
     </div>
 </template>
 <style scoped>
+:deep(.el-progress-bar__outer) {
+    background-color: v-bind("progressColor.bg.now");
+}
 .icon {
     min-height: 64px;
     min-width: 64px;
@@ -153,7 +149,7 @@ onMounted(() => {
     margin-bottom: 4px;
     margin-left: 4px;
 }
-.date {
+.time {
     position: absolute;
     right: 14px;
 }

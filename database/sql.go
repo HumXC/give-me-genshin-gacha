@@ -7,13 +7,13 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type GachaItem struct {
-	GachaType string `json:"gacha_type"`
+type GachaLog struct {
+	GachaType string `json:"gachaType"`
 	Time      string `json:"time"`
 	Name      string `json:"name"`
 	Lang      string `json:"lang"`
-	Itemtype  string `json:"item_type"`
-	RankType  string `json:"rank_type"`
+	Itemtype  string `json:"itemType"`
+	RankType  string `json:"rankType"`
 	ID        string `json:"id"`
 }
 
@@ -30,6 +30,68 @@ type GachaTotal struct {
 type GachaDB struct {
 	db   *sql.DB
 	Uids []string
+}
+
+// 获取物品
+func (d *GachaDB) GetLogs(uid, gachaType string, num, page int) ([]GachaLog, error) {
+	result := make([]GachaLog, 0)
+	sql := `
+	SELECT gacha_type,time,name,lang,item_type,rank_type,id FROM 'UID'
+	WHERE gacha_type=? ORDER BY i DESC LIMIT ?,?
+	`
+	offset := num * page
+	sql = strings.Replace(sql, "UID", uid, 1)
+	sql = fixGachaType(sql, gachaType)
+	rows, err := d.db.Query(sql, gachaType, offset, num)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		i := GachaLog{}
+		err := rows.Scan(&i.GachaType, &i.Time, &i.Name, &i.Lang, &i.Itemtype, &i.RankType, &i.ID)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, i)
+	}
+	return result, nil
+}
+
+// 获取与某物品与其同品质的上一件物品之间的祈愿次数
+func (d *GachaDB) GetNumWithLast(uid, gachaType, id string) (int, error) {
+	sql := `
+	SELECT rank_type FROM 'UID' WHERE gacha_type=? AND
+	i<=(SELECT i FROM 'UID' WHERE id=?)
+	ORDER BY i DESC
+	LIMIT 100;
+	`
+	sql = strings.Replace(sql, "UID", uid, 2)
+	sql = fixGachaType(sql, gachaType)
+	rows, err := d.db.Query(sql, gachaType, id)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	count := 1
+	rankType := ""
+	for rows.Next() {
+		rt := ""
+		err := rows.Scan(&rt)
+		if err != nil {
+			return 0, err
+		}
+		if rankType == "" {
+			rankType = rt
+			continue
+		}
+		if rankType == rt || rt == "5" {
+			return count, nil
+		} else {
+			count++
+		}
+	}
+	return count, nil
 }
 
 // 获取上一次五星之后抽的次数
@@ -150,7 +212,7 @@ func (d *GachaDB) GetLastIDs() (map[string]map[string]string, error) {
 	}
 	return result, nil
 }
-func (d *GachaDB) Add(uid string, items []GachaItem) error {
+func (d *GachaDB) Add(uid string, items []GachaLog) error {
 	// 字段 i 保证插入顺序，祈愿记录越新，i 越大
 	createTable := `
 	CREATE TABLE ? (
@@ -205,6 +267,9 @@ func (d *GachaDB) Add(uid string, items []GachaItem) error {
 func fixGachaType(query, gachaType string) string {
 	if gachaType == "301" {
 		return strings.ReplaceAll(query, "gacha_type=?", "(gacha_type=? OR gacha_type='400')")
+	}
+	if gachaType == "400" {
+		return strings.ReplaceAll(query, "gacha_type=?", "(gacha_type=? OR gacha_type='301')")
 	}
 	return query
 }

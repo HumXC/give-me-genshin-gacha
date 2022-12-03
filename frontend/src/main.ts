@@ -104,3 +104,10 @@ export async function setWindowSize(option: Option) {
     await WindowSetSize(w, h);
     WindowCenter();
 }
+export async function sleep(timeout: number) {
+    return new Promise<void>((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, timeout);
+    });
+}
