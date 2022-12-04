@@ -11,7 +11,7 @@
 
 ## 截图
 
-![截图](https://raw.githubusercontent.com/HumXC/give-me-genshin-gacha/doc/1.png)
+![截图](https://raw.githubusercontent.com/HumXC/give-me-genshin-gacha/main/doc/1.png)
 
 ## 编译
 
