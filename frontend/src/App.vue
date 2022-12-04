@@ -108,9 +108,6 @@ function changeSelectedUid(uid: string) {
 onMounted(async () => {
     console.log("初始化");
     let o = await GetOption();
-
-    console.log(o.controlBar.selectedUid);
-
     option.value.otherOption = o.otherOption;
     option.value.showGacha = o.showGacha;
     option.value.controlBar = o.controlBar;

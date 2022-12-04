@@ -15,11 +15,14 @@ defineEmits<{
 
 const datas: Ref<PieData> = ref(new PieData());
 const refresh = async () => {
+    if (props.option.controlBar.selectedUid === "") {
+        return;
+    }
     let d = await GetPieDatas(props.option.controlBar.selectedUid);
     datas.value.usedCosts = d.usedCosts;
     // 设置之间按钮的值
-    // TODO 初次启动时d为undefind
-    d.usedCosts.forEach((element) => {
+    for (let i = 0; i < d.usedCosts.length; i++) {
+        const element = d.usedCosts[i];
         switch (element.gachaType) {
             case "301":
                 pie1.value.usedCost = element.cost;
@@ -34,7 +37,7 @@ const refresh = async () => {
                 pie4.value.usedCost = element.cost;
                 break;
         }
-    });
+    }
 
     pie1.value.items = d.totals.t301;
     pie2.value.items = d.totals.t302;

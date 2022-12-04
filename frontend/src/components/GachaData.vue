@@ -51,11 +51,15 @@ const checkItemIsShow = (log: GachaLog) => {
 const nowLogs = ref({ count: 0, logs: new Array<GachaLog>(), page: 0 });
 
 const load = async (isWait: boolean = true) => {
+    console.log("load");
+
     if (data.value.isLoading) return;
     data.value.isLoading = true;
     let uid = data.value.uid;
     let gachaType = data.value.gachaType;
     if (uid == "") {
+        // uid 为空时保留禁用状态，防止无限循环
+        // data.value.isLoading = false;
         return;
     }
     console.log(
@@ -81,6 +85,7 @@ const load = async (isWait: boolean = true) => {
 };
 
 const refresh = () => {
+    data.value.isLoading = false;
     gachaLogs = defaultGachaLogs();
 };
 const show = (uid: string, gachaType: string) => {
@@ -151,7 +156,7 @@ defineExpose({
             ><div
                 class="item"
                 v-infinite-scroll="load"
-                infinite-scroll-delay="20"
+                infinite-scroll-delay="200"
                 infinite-scroll-distance="100"
                 :infinite-scroll-disabled="data.isLoading"
             >

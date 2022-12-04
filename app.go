@@ -152,10 +152,12 @@ func (a *App) GetPieDatas(uid string) GachaPieDate {
 	result := GachaPieDate{}
 	r, err := a.DB.GetTotals(uid)
 	if err != nil {
+		a.putErr("从数据库获取记录时出现错误", err)
 		return result
 	}
 	c, err := a.DB.GetUsedCost(uid)
 	if err != nil {
+		a.putErr("从数据库获取记录时出现错误", err)
 		return result
 	}
 	result.UsedCosts = c
@@ -309,7 +311,7 @@ func (h *FileLoader) Init() error {
 		os.MkdirAll(h.IconDir, 0755)
 	}
 	getIcon := func(url, name string) error {
-		f, err := os.OpenFile(path.Join(h.IconDir, name), os.O_CREATE|os.O_WRONLY, 0755)
+		f, err := os.OpenFile(name, os.O_CREATE|os.O_WRONLY, 0755)
 		if err != nil {
 			h.Inited = false
 			return err
@@ -363,19 +365,21 @@ func (h *FileLoader) Init() error {
 	}
 
 	for _, icon := range h.IconAvatar {
-		if IsExist(path.Join(h.IconDir, icon.Name)) {
+		name := path.Join(h.IconDir, icon.Name+".png")
+		if IsExist(name) {
 			continue
 		}
-		err := getIcon(icon.Url, icon.Name)
+		err := getIcon(icon.Url, name)
 		if err != nil {
 			return err
 		}
 	}
 	for _, icon := range h.IconWeapon {
-		if IsExist(path.Join(h.IconDir, icon.Name)) {
+		name := path.Join(h.IconDir, icon.Name+".png")
+		if IsExist(name) {
 			continue
 		}
-		err := getIcon(icon.Url, icon.Name)
+		err := getIcon(icon.Url, name)
 		if err != nil {
 			return err
 		}

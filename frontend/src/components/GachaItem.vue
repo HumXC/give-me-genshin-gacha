@@ -21,7 +21,7 @@ const progressColor = {
     in: {
         now: "#70bff3",
         rank4: "#d9a2e7de",
-        rank5: "#e3c139",
+        rank5: "#ffd52c",
     },
 };
 const backgroundImages = ref({
@@ -33,15 +33,15 @@ const backgroundImages = ref({
 // 物品不同品质的颜色
 const itemColors = {
     rank5: {
-        text: "#edeff1",
+        text: "#fffdf5",
         bg: "#f39d53",
     },
     rank4: {
-        text: "#e7e7e7",
+        text: "#fff2fa",
         bg: "#a37dde",
     },
     rank3: {
-        text: "#e7e7e7",
+        text: "#fdfeff",
         bg: "#5ba8d6",
     },
 };
@@ -58,7 +58,7 @@ const data = ref({
 onMounted(async () => {
     var d = data.value;
     var g = props.gachaLog;
-    iconSrc.value = "icon/" + props.gachaLog.name;
+    iconSrc.value = "icon/" + props.gachaLog.name + ".png";
     if (g.rankType != "3") {
         // 四星，五星物品显示额外内容
         d.usedCost = await GetNumWithLast(props.uid, props.gachaLog.gachaType, props.gachaLog.id);
