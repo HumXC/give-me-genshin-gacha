@@ -46,7 +46,7 @@ func GetGameDir() (string, error) {
 		i := strings.LastIndex(line, searchName)
 		return line[12 : i+len(searchName)], nil
 	}
-	return "", errors.New("没有找到游戏目录, 尝试进入游戏后再尝试")
+	return "", errors.New("没有找到游戏目录, 进入游戏后再尝试")
 }
 
 // 从游戏目录中的网络缓存获取旅行者祈愿的 URL

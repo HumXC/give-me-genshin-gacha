@@ -38,6 +38,7 @@ const funcGachaData = ref({
     show: (uid: string, gachaType: string) => {},
     refresh: () => {},
 });
+// 刷新各组件
 const refresh = async () => {
     await refreshControlBar.value();
     await refreshGachaInfo.value();
@@ -57,7 +58,11 @@ async function startSync(done: () => void, useProxy: boolean = false) {
             ElMessageBox.confirm("要使用代理方式重新同步吗?", "链接已经过期", {
                 confirmButtonText: "好",
                 cancelButtonText: "别",
+                closeOnClickModal: false,
             })
+                .then(() => {
+                    startSync(done, true);
+                })
                 .catch(() => {
                     done();
                     ElMessage.error({
@@ -65,10 +70,8 @@ async function startSync(done: () => void, useProxy: boolean = false) {
                         duration: 0,
                         showClose: true,
                     });
-                })
-                .then(() => {
-                    startSync(done, true);
                 });
+
             break;
 
         case "cancel":
@@ -79,6 +82,7 @@ async function startSync(done: () => void, useProxy: boolean = false) {
             break;
         default:
             done();
+            refresh();
             ElMessage.success("同步完成 - " + result);
             break;
     }

@@ -67,7 +67,7 @@ const load = async (isWait: boolean = true) => {
             nowLogs.value.page
     );
 
-    let logs = await GetLogs(uid, gachaType, 100, nowLogs.value.page);
+    let logs = await GetLogs(uid, gachaType, 10, nowLogs.value.page);
     console.log("有" + logs.length + "条记录");
     if (logs.length == 0) {
         if (isWait) await sleep(3000);

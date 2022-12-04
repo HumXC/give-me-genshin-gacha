@@ -8,7 +8,7 @@ import rank3bg from "../assets/images/rank3.png";
 import rank4bg from "../assets/images/rank4.png";
 import rank5bg from "../assets/images/rank5.png";
 import { GachaLog } from "../type";
-
+const iconSrc = ref("");
 // 进度条的颜色集合
 const progressColor = {
     // 进度条底色
@@ -19,9 +19,9 @@ const progressColor = {
     },
     // 进度条进度的颜色
     in: {
-        now: "#557de1",
+        now: "#70bff3",
         rank4: "#d9a2e7de",
-        rank5: "#ffd324",
+        rank5: "#e3c139",
     },
 };
 const backgroundImages = ref({
@@ -58,6 +58,7 @@ const data = ref({
 onMounted(async () => {
     var d = data.value;
     var g = props.gachaLog;
+    iconSrc.value = "icon/" + props.gachaLog.name;
     if (g.rankType != "3") {
         // 四星，五星物品显示额外内容
         d.usedCost = await GetNumWithLast(props.uid, props.gachaLog.gachaType, props.gachaLog.id);
@@ -81,7 +82,7 @@ onMounted(async () => {
 </script>
 <template>
     <div class="item">
-        <div class="icon"></div>
+        <img :alt="gachaLog.name" class="icon" :src="iconSrc" />
         <div style="width: 10px" />
         <div class="info" :id="gachaLog.id">
             <div class="item-name">
@@ -112,7 +113,6 @@ onMounted(async () => {
     max-height: 64px;
     color: #161616;
     background-image: v-bind("backgroundImages.now");
-    background-color: aqua;
     background-size: contain;
     border-radius: 10px;
 }

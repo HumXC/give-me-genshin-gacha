@@ -18,6 +18,7 @@ const refresh = async () => {
     let d = await GetPieDatas(props.option.controlBar.selectedUid);
     datas.value.usedCosts = d.usedCosts;
     // 设置之间按钮的值
+    // TODO 初次启动时d为undefind
     d.usedCosts.forEach((element) => {
         switch (element.gachaType) {
             case "301":

@@ -132,7 +132,7 @@ func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]str
 		}
 		endID = l[len(l)-1].ID
 		list = append(list, l...)
-		time.Sleep(1 * time.Second)
+		time.Sleep(300 * time.Millisecond)
 	}
 	return list, nil
 }

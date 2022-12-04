@@ -34,11 +34,10 @@ const refresh = async (sync: boolean = false) => {
     let uids = await GetUids();
     data.value.uids = uids;
     if (uids.length != 0) {
-        console.log(props.option.controlBar.selectedUid);
-
         if (props.option.controlBar.selectedUid == "") {
             props.option.controlBar.selectedUid = uids[0];
         }
+        console.log("选择的uid=" + props.option.controlBar.selectedUid);
     } else {
         props.option.controlBar.selectedUid = "";
     }

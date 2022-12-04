@@ -22,7 +22,8 @@ func main() {
 		MinWidth:  388,
 		MinHeight: 518,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: NewFileLoader(),
 		},
 		OnStartup:  app.startup,
 		OnShutdown: app.shutdown,

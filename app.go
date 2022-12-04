@@ -7,8 +7,11 @@ import (
 	"give-me-genshin-gacha/database"
 	"give-me-genshin-gacha/gacha"
 	"io"
+	"net/http"
 	"os"
 	"path"
+	"strings"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -61,11 +64,13 @@ type GachaPieDate struct {
 }
 
 type App struct {
-	ctx     context.Context
-	proxy   *gacha.ProxyServer
-	DB      *database.GachaDB
-	DataDir string
-	GameDir string
+	ctx         context.Context
+	proxy       *gacha.ProxyServer
+	option      Option
+	DB          *database.GachaDB
+	DataDir     string
+	GameDir     string
+	GachaLogUrl string
 }
 
 func (a *App) putErr(info string, err error) {
@@ -106,6 +111,7 @@ func (a *App) GetOption() Option {
 	if err != nil {
 		a.putErr("加载配置文件时出现错误", err)
 	}
+	a.option = opt
 	return opt
 }
 func (a *App) SaveOption(opt Option) {
@@ -129,6 +135,7 @@ func (a *App) SaveOption(opt Option) {
 	}
 	defer f.Close()
 	f.Write(b)
+	a.option = opt
 }
 
 func (a *App) GetLogs(uid, gachaType string, num, page int) []database.GachaLog {
@@ -165,7 +172,6 @@ func (a *App) GetUids() []string {
 
 // 从服务器同步祈愿数据到本地数据库, 如果成功返回 true
 func (a *App) Sync(useProxy bool) string {
-	rawUrl := ""
 	if useProxy {
 		proxy, err := gacha.NewProxyServer()
 		if err != nil {
@@ -179,9 +185,10 @@ func (a *App) Sync(useProxy bool) string {
 			a.putErr("代理服务器启动失败", err)
 			return "fail"
 		}
-		rawUrl = <-proxy.Url
+		a.GachaLogUrl = <-proxy.Url
+
 		a.proxy = nil
-		if rawUrl == "" {
+		if a.GachaLogUrl == "" {
 			return "cancel"
 		}
 		err = proxy.Stop()
@@ -190,6 +197,10 @@ func (a *App) Sync(useProxy bool) string {
 			a.putErr("代理服务器关闭失败", err)
 			return "fail"
 		}
+		runtime.EventsEmit(a.ctx, "alert", Message{
+			Type: "info",
+			Msg:  "成功通过代理取得了祈愿链接，正在同步哦",
+		})
 	} else {
 		if a.GameDir == "" {
 			dir, err := gacha.GetGameDir()
@@ -204,10 +215,10 @@ func (a *App) Sync(useProxy bool) string {
 			a.putErr("无法获取祈愿链接", err)
 			return "fail"
 		}
-		rawUrl = url
+		a.GachaLogUrl = url
 	}
 
-	fetcher, err := gacha.NewFetcher(a.ctx, rawUrl)
+	fetcher, err := gacha.NewFetcher(a.ctx, a.GachaLogUrl)
 	if err != nil {
 		a.putErr("无法创建爬虫", err)
 		return "fail"
@@ -220,6 +231,7 @@ func (a *App) Sync(useProxy bool) string {
 	items, err := fetcher.Get(lastIds)
 	if err != nil {
 		if err.Error() == "authkey timeout" {
+			a.GachaLogUrl = ""
 			return "authkey timeout"
 		}
 		runtime.EventsEmit(a.ctx, "alert", Message{
@@ -270,5 +282,155 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) shutdown(ctx context.Context) {
 	if a.proxy != nil {
 		_ = a.proxy.Stop()
+	}
+}
+
+// 动态资产，用于加载物品图标
+type Icon struct {
+	Url  string `json:"icon"`
+	Name string `json:"name"`
+}
+type FileLoader struct {
+	http.Handler
+	IconAvatar []Icon
+	IconWeapon []Icon
+	IconDir    string
+	Inited     bool
+}
+
+func NewFileLoader() *FileLoader {
+	return &FileLoader{
+		IconDir: "icons",
+	}
+}
+func (h *FileLoader) Init() error {
+	h.Inited = true
+	if !IsExist(h.IconDir) {
+		os.MkdirAll(h.IconDir, 0755)
+	}
+	getIcon := func(url, name string) error {
+		f, err := os.OpenFile(path.Join(h.IconDir, name), os.O_CREATE|os.O_WRONLY, 0755)
+		if err != nil {
+			h.Inited = false
+			return err
+		}
+		defer f.Close()
+		r, err := http.DefaultClient.Get(url)
+		if err != nil {
+			h.Inited = false
+			return err
+		}
+		defer r.Body.Close()
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.Inited = false
+			return err
+		}
+		f.Write(b)
+		return nil
+	}
+	api := "https://waf-api-takumi.mihoyo.com/common/map_user/ys_obc/v1/map/game_item?map_id=2&app_sn=ys_obc&lang=zh-cn"
+	if len(h.IconAvatar) == 0 || len(h.IconWeapon) == 0 {
+		resp, err := http.DefaultClient.Get(api)
+		if err != nil {
+			h.Inited = false
+			return err
+		}
+		defer resp.Body.Close()
+		type JsonResp struct {
+			Data struct {
+				Avatar struct {
+					List []Icon `json:"list"`
+				} `json:"avatar"`
+				Weapon struct {
+					List []Icon `json:"list"`
+				} `json:"weapon"`
+			} `json:"data"`
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			h.Inited = false
+			return err
+		}
+		jr := JsonResp{}
+		err = json.Unmarshal(body, &jr)
+		if err != nil {
+			h.Inited = false
+			return err
+		}
+		h.IconAvatar = jr.Data.Avatar.List
+		h.IconWeapon = jr.Data.Weapon.List
+	}
+
+	for _, icon := range h.IconAvatar {
+		if IsExist(path.Join(h.IconDir, icon.Name)) {
+			continue
+		}
+		err := getIcon(icon.Url, icon.Name)
+		if err != nil {
+			return err
+		}
+	}
+	for _, icon := range h.IconWeapon {
+		if IsExist(path.Join(h.IconDir, icon.Name)) {
+			continue
+		}
+		err := getIcon(icon.Url, icon.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func (h *FileLoader) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	println("资产服务器请求:", req.URL.Path)
+	iconName := strings.TrimPrefix(req.URL.Path, "/icon/")
+	if iconName != "" {
+		h.handleIcon(iconName, res)
+		return
+	}
+	http.Error(res, "不支持的路径", http.StatusNotFound)
+}
+func (h *FileLoader) handleIcon(name string, res http.ResponseWriter) {
+	if !h.Inited {
+		go func() {
+			err := h.Init()
+			if err != nil {
+				http.Error(res, "图标初始化失败", http.StatusInternalServerError)
+				return
+			}
+		}()
+	}
+	count := 0
+	for !h.Inited {
+		time.Sleep(5000)
+		if count > 3 {
+			http.Error(res, "超时", http.StatusRequestTimeout)
+			return
+		}
+		count++
+	}
+	iconName := path.Join(h.IconDir, name)
+	if IsExist(iconName) {
+		f, err := os.ReadFile(iconName)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		res.Write(f)
+	} else {
+		http.Error(res, "找不到图标", http.StatusNotFound)
+
+	}
+
+}
+
+// 判断文件是否存在
+func IsExist(path string) bool {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	} else {
+		return true
 	}
 }

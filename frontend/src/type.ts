@@ -32,7 +32,10 @@ export class PieData {
     usedCosts: Array<{
         gachaType: string;
         cost: number;
-    }> = []; // 几发未出金
+    }> = new Array<{
+        gachaType: string;
+        cost: number;
+    }>(); // 几发未出金
     tatols: {
         t301: Array<{
             total: number;
@@ -55,10 +58,26 @@ export class PieData {
             rankType: string;
         }>;
     } = {
-        t301: [],
-        t302: [],
-        t200: [],
-        t100: [],
+        t301: new Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>(),
+        t302: new Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>(),
+        t200: new Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>(),
+        t100: new Array<{
+            total: number;
+            itemType: string;
+            rankType: string;
+        }>(),
     };
 }
 // 一条完整的祈愿数据
