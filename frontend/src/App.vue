@@ -103,6 +103,7 @@ function changeSelectedUid(uid: string) {
     console.log("切换了id" + uid);
     option.value.controlBar.selectedUid = uid;
     saveOption();
+    refresh();
 }
 
 onMounted(async () => {

@@ -3,6 +3,8 @@
  -->
 
 <script lang="ts" setup>
+import { ElMessage } from "element-plus";
+import { BrowserOpenURL } from "../../wailsjs/runtime";
 import { Option } from "../type";
 const e = defineEmits<{
     (e: "closing", done: () => void): void;
@@ -11,6 +13,15 @@ const e = defineEmits<{
 const props = defineProps<{ status: { isShow: boolean }; option: Option }>();
 const handleClose = (done: () => void) => {
     e("closing", done);
+};
+const goToGithub = () => {
+    BrowserOpenURL("https://github.com/HumXC/give-me-genshin-gacha");
+};
+const switchDarkTheme = () => {
+    ElMessage({
+        type: "info",
+        message: "还没实现呢，怎么点都没用的哦",
+    });
 };
 </script>
 <template>
@@ -70,8 +81,21 @@ const handleClose = (done: () => void) => {
             </div>
             <div class="switch-item">
                 <span>深色主题</span>
-                <el-switch class="switch" v-model="option.otherOption.darkTheme" />
+                <el-switch
+                    class="switch"
+                    v-model="option.otherOption.darkTheme"
+                    @click="switchDarkTheme"
+                />
             </div>
+        </el-card>
+        <br />
+        <el-card>
+            <template #header>
+                <div class="card-header">
+                    <span>关于</span>
+                </div>
+            </template>
+            <el-button type="primary" @click="goToGithub">看看你的 github</el-button>
         </el-card>
     </el-drawer>
 </template>
