@@ -52,7 +52,6 @@ const nowLogs = ref({ count: 0, logs: new Array<GachaLog>(), page: 0 });
 
 const load = async (isWait: boolean = true) => {
     console.log("load");
-
     if (data.value.isLoading) return;
     data.value.isLoading = true;
     let uid = data.value.uid;
@@ -111,7 +110,14 @@ defineExpose({
 });
 </script>
 <template>
-    <el-drawer size="100%" :show-close="false" v-model="data.isShow" direction="ttb">
+    <el-drawer
+        class="drawer"
+        style="padding: 0"
+        size="100%"
+        :show-close="false"
+        v-model="data.isShow"
+        direction="ttb"
+    >
         <template #title>
             <div class="title">
                 <span>{{ title }}</span>
@@ -152,9 +158,9 @@ defineExpose({
                 </div>
             </div>
         </template>
-        <el-scrollbar height="100%" v-if="data.isShow"
-            ><div
-                class="item"
+        <el-scrollbar height="100%" v-if="data.isShow">
+            <div
+                class="items"
                 v-infinite-scroll="load"
                 infinite-scroll-delay="200"
                 infinite-scroll-distance="100"
@@ -166,7 +172,8 @@ defineExpose({
                         :gacha-log="nowLogs.logs[i - 1]"
                         :uid="data.uid"
                     />
-                </div></div
+                </div>
+                <i></i> <i></i> <i></i> <i></i> <i></i> <i></i> <i></i> <i></i> <i></i></div
         ></el-scrollbar>
     </el-drawer>
 </template>
@@ -181,9 +188,16 @@ defineExpose({
 .checkbox {
     margin-right: 20px;
 }
-.item {
-    height: 70px;
+.items {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.items > i {
+    width: 340px;
     margin-right: 16px;
+    margin-top: 10px;
 }
 .title {
     position: relative;

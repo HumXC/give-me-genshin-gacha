@@ -120,10 +120,12 @@ onMounted(async () => {
     display: flex;
     flex-direction: row;
     align-items: center;
-    width: 100%;
-    border-radius: 10px;
-    margin-bottom: 10px;
+    height: 70px;
+    width: 340px;
+    margin-top: 10px;
+    margin-right: 16px;
 }
+
 .info {
     position: relative;
     margin: auto;
@@ -140,8 +142,7 @@ onMounted(async () => {
     padding-right: 10px;
     padding-top: 8px;
     padding-bottom: 4px;
-    border: 2px solid #d4d4d4;
-    box-shadow: 0 0 12px rgb(142, 142, 142);
+    border: 2px solid #d0d0d0;
 }
 .item-name {
     font-size: 14px;
