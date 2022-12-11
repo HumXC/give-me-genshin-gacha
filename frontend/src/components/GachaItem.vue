@@ -49,7 +49,6 @@ const props = defineProps<{ uid: string; gachaLog: GachaLog }>();
 const data = ref({
     // 距离上一次同等品质的物品出货所花费的次数
     usedCost: 0,
-    assess: "",
     percentage: 100,
     bgColor: itemColors.rank3.bg,
     textColor: itemColors.rank3.text,
@@ -59,24 +58,25 @@ onMounted(async () => {
     var d = data.value;
     var g = props.gachaLog;
     iconSrc.value = "icon/" + props.gachaLog.name + ".png";
-    if (g.rankType != "3") {
-        // 四星，五星物品显示额外内容
-        d.usedCost = await GetNumWithLast(props.uid, props.gachaLog.gachaType, props.gachaLog.id);
-        if (g.rankType === "4") {
-            progressColor.bg.now = progressColor.bg.rank4;
-            progressColor.in.now = progressColor.in.rank4;
-            d.percentage = (d.usedCost / 10) * 100;
-            d.bgColor = itemColors.rank4.bg;
-            d.textColor = itemColors.rank4.text;
-            backgroundImages.value.now = backgroundImages.value.rank4;
-        } else {
-            progressColor.bg.now = progressColor.bg.rank5;
-            progressColor.in.now = progressColor.in.rank5;
-            d.percentage = (d.usedCost / 90) * 100;
-            d.bgColor = itemColors.rank5.bg;
-            d.textColor = itemColors.rank5.text;
-            backgroundImages.value.now = backgroundImages.value.rank5;
-        }
+    if (g.rankType === "3") return;
+    // 四星，五星物品显示额外内容
+    d.usedCost = await GetNumWithLast(props.uid, props.gachaLog.gachaType, props.gachaLog.id);
+    if (g.rankType === "4") {
+        progressColor.bg.now = progressColor.bg.rank4;
+        progressColor.in.now = progressColor.in.rank4;
+        d.percentage = (d.usedCost / 10) * 100;
+        if (d.percentage < 11) d.percentage = 11;
+        d.bgColor = itemColors.rank4.bg;
+        d.textColor = itemColors.rank4.text;
+        backgroundImages.value.now = backgroundImages.value.rank4;
+    } else {
+        progressColor.bg.now = progressColor.bg.rank5;
+        progressColor.in.now = progressColor.in.rank5;
+        d.percentage = (d.usedCost / 90) * 100;
+        if (d.percentage < 11) d.percentage = 11;
+        d.bgColor = itemColors.rank5.bg;
+        d.textColor = itemColors.rank5.text;
+        backgroundImages.value.now = backgroundImages.value.rank5;
     }
 });
 </script>
@@ -87,8 +87,8 @@ onMounted(async () => {
         <div class="info" :id="gachaLog.id">
             <div class="item-name">
                 <span>{{ gachaLog.name }}</span>
-                <span> &nbsp</span>
-                <span v-if="data.usedCost != 0">{{ data.usedCost }}</span>
+                <!-- 下面这行不能删，删了就会的话如果进度条满了，四星，五星物品的进度条颜色就会变成三星的蓝色。但是为什么？ -->
+                <span v-if="data.usedCost != 0"></span>
                 <span class="time">{{ gachaLog.time }}</span>
             </div>
             <el-progress
@@ -97,14 +97,21 @@ onMounted(async () => {
                 :percentage="data.percentage"
                 :color="progressColor.in.now"
                 status="success"
-                ><span>{{ data.assess }}</span></el-progress
             >
+                <span class="used-cost">
+                    {{ data.usedCost !== 0 ? data.usedCost : "" }}
+                </span>
+            </el-progress>
         </div>
     </div>
 </template>
 <style scoped>
 :deep(.el-progress-bar__outer) {
     background-color: v-bind("progressColor.bg.now");
+}
+.used-cost {
+    margin-right: 2px;
+    font-size: 16px;
 }
 .icon {
     min-height: 64px;
@@ -121,7 +128,7 @@ onMounted(async () => {
     flex-direction: row;
     align-items: center;
     height: 70px;
-    width: 340px;
+    width: 320px;
     margin-top: 10px;
     margin-right: 16px;
 }

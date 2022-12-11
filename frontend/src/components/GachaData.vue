@@ -4,19 +4,19 @@
 
 <script lang="ts" setup>
 import { Close } from "@element-plus/icons-vue";
-import { ref, watch } from "vue";
+import { onMounted, ref } from "vue";
 import { GetLogs } from "../../wailsjs/go/main/App";
 import { gachaTypeToName, sleep } from "../main";
 import { GachaLog } from "../type";
 import GachaItem from "./GachaItem.vue";
-let data = ref({ isShow: false, uid: "", gachaType: "", isLoading: false });
+let data = ref({ isShow: false, uid: "", gachaType: "" });
 
 const defaultGachaLogs = () => {
     return new Map([
-        ["301", { count: 0, logs: new Array<GachaLog>(), page: 0 }],
-        ["302", { count: 0, logs: new Array<GachaLog>(), page: 0 }],
-        ["200", { count: 0, logs: new Array<GachaLog>(), page: 0 }],
-        ["100", { count: 0, logs: new Array<GachaLog>(), page: 0 }],
+        ["301", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
+        ["302", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
+        ["200", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
+        ["100", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
     ]);
 };
 let gachaLogs = defaultGachaLogs();
@@ -27,9 +27,6 @@ const checks = ref({
     showRank3: false,
     showRank4: true,
     showRank5: true,
-});
-watch(checks.value, () => {
-    load(false);
 });
 const checkItemIsShow = (log: GachaLog) => {
     if (log.itemType == "武器" && !checks.value.showArms) {
@@ -48,44 +45,40 @@ const checkItemIsShow = (log: GachaLog) => {
     }
     return true;
 };
-const nowLogs = ref({ count: 0, logs: new Array<GachaLog>(), page: 0 });
+const nowLogs = ref({ count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false });
 
-const load = async (isWait: boolean = true) => {
-    console.log("load");
-    if (data.value.isLoading) return;
-    data.value.isLoading = true;
-    let uid = data.value.uid;
-    let gachaType = data.value.gachaType;
-    if (uid == "") {
-        // uid 为空时保留禁用状态，防止无限循环
-        // data.value.isLoading = false;
-        return;
-    }
-    console.log(
-        "从数据库获取祈愿记录: uid=" +
-            uid +
-            " gachaType=" +
-            gachaType +
-            " page=" +
-            nowLogs.value.page
-    );
+const load = async () => {
+    // 我实在想不出有什么好方法能让他在只选择 5星 时能够按需加载完所有的5星
+    while (true) {
+        let uid = data.value.uid;
+        let gachaType = data.value.gachaType;
+        let nl = nowLogs.value;
+        if (uid == "") {
+            await sleep(200);
+            continue;
+        }
+        if (nl.isLoaded) {
+            await sleep(200);
+            continue;
+        }
+        let logs = await GetLogs(uid, gachaType, 100, nowLogs.value.page);
 
-    let logs = await GetLogs(uid, gachaType, 10, nowLogs.value.page);
-    console.log("有" + logs.length + "条记录");
-    if (logs.length == 0) {
-        if (isWait) await sleep(3000);
-        data.value.isLoading = false;
-        return;
+        if (logs.length == 0) {
+            nl.isLoaded = true;
+            await sleep(200);
+            continue;
+        }
+        console.log("有" + logs.length + "条记录");
+        nl.page++;
+        nl.logs.push(...logs);
+        nl.count += logs.length;
+        await sleep(200);
     }
-    nowLogs.value.page++;
-    nowLogs.value.logs.push(...logs);
-    nowLogs.value.count += logs.length;
-    data.value.isLoading = false;
 };
 
 const refresh = () => {
-    data.value.isLoading = false;
     gachaLogs = defaultGachaLogs();
+    load();
 };
 const show = (uid: string, gachaType: string) => {
     title.value = gachaTypeToName(gachaType);
@@ -103,7 +96,9 @@ const show = (uid: string, gachaType: string) => {
     nowLogs.value = g;
     data.value.isShow = true;
 };
-
+onMounted(() => {
+    load();
+});
 defineExpose({
     show,
     refresh,
@@ -158,19 +153,15 @@ defineExpose({
                 </div>
             </div>
         </template>
+        <!-- TODO: 拖到栏不靠右边，要是能去除 drawer-body的padding就好了 -->
         <el-scrollbar height="100%" v-if="data.isShow">
-            <div
-                class="items"
-                v-infinite-scroll="load"
-                infinite-scroll-delay="200"
-                infinite-scroll-distance="100"
-                :infinite-scroll-disabled="data.isLoading"
-            >
+            <div class="items">
                 <div v-for="i in nowLogs.count">
                     <GachaItem
                         v-if="checkItemIsShow(nowLogs.logs[i - 1])"
                         :gacha-log="nowLogs.logs[i - 1]"
                         :uid="data.uid"
+                        :id="nowLogs.logs[i - 1].id"
                     />
                 </div>
                 <i></i> <i></i> <i></i> <i></i> <i></i> <i></i> <i></i> <i></i> <i></i></div
@@ -195,7 +186,7 @@ defineExpose({
     flex-wrap: wrap;
 }
 .items > i {
-    width: 340px;
+    width: 320px;
     margin-right: 16px;
     margin-top: 10px;
 }
