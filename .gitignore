@@ -18,12 +18,13 @@ cmd/temp
 .vscode
 cmd/*.json
 cmd/*.db
-node_modules
 package-lock.json
 package.json
 build/bin
 node_modules
 frontend/dist
+!frontend/package.json
+!frontend/package-lock.json
 data.db
 temp
 option.json
