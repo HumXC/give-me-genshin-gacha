@@ -6,17 +6,17 @@
 import { Close } from "@element-plus/icons-vue";
 import { onMounted, ref } from "vue";
 import { GetLogs } from "../../wailsjs/go/main/App";
+import { models } from "../../wailsjs/go/models";
 import { gachaTypeToName, sleep } from "../main";
-import { GachaLog } from "../type";
 import GachaItem from "./GachaItem.vue";
 let data = ref({ isShow: false, uid: "", gachaType: "" });
 
 const defaultGachaLogs = () => {
     return new Map([
-        ["301", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
-        ["302", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
-        ["200", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
-        ["100", { count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false }],
+        ["301", { count: 0, logs: new Array<models.GachaLog>(), page: 0, isLoaded: false }],
+        ["302", { count: 0, logs: new Array<models.GachaLog>(), page: 0, isLoaded: false }],
+        ["200", { count: 0, logs: new Array<models.GachaLog>(), page: 0, isLoaded: false }],
+        ["100", { count: 0, logs: new Array<models.GachaLog>(), page: 0, isLoaded: false }],
     ]);
 };
 let gachaLogs = defaultGachaLogs();
@@ -28,14 +28,14 @@ const checks = ref({
     showRank4: true,
     showRank5: true,
 });
-const checkItemIsShow = (log: GachaLog) => {
-    if (log.itemType == "武器" && !checks.value.showArms) {
+const checkItemIsShow = (log: models.GachaLog) => {
+    if (log.item_type == "武器" && !checks.value.showArms) {
         return false;
     }
-    if (log.itemType == "角色" && !checks.value.showRole) {
+    if (log.item_type == "角色" && !checks.value.showRole) {
         return false;
     }
-    switch (log.rankType) {
+    switch (log.rank_type) {
         case "3":
             return checks.value.showRank3;
         case "4":
@@ -45,7 +45,7 @@ const checkItemIsShow = (log: GachaLog) => {
     }
     return true;
 };
-const nowLogs = ref({ count: 0, logs: new Array<GachaLog>(), page: 0, isLoaded: false });
+const nowLogs = ref({ count: 0, logs: new Array<models.GachaLog>(), page: 0, isLoaded: false });
 
 const load = async () => {
     // 我实在想不出有什么好方法能让他在只选择 5星 时能够按需加载完所有的5星
@@ -78,7 +78,6 @@ const load = async () => {
 
 const refresh = () => {
     gachaLogs = defaultGachaLogs();
-    load();
 };
 const show = (uid: string, gachaType: string) => {
     title.value = gachaTypeToName(gachaType);

@@ -1,62 +1,3 @@
-export namespace database {
-	
-	export class GachaLog {
-	    gachaType: string;
-	    time: string;
-	    name: string;
-	    lang: string;
-	    itemType: string;
-	    rankType: string;
-	    id: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new GachaLog(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.gachaType = source["gachaType"];
-	        this.time = source["time"];
-	        this.name = source["name"];
-	        this.lang = source["lang"];
-	        this.itemType = source["itemType"];
-	        this.rankType = source["rankType"];
-	        this.id = source["id"];
-	    }
-	}
-	export class GachaTotal {
-	    total: number;
-	    itemType: string;
-	    rankType: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new GachaTotal(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.total = source["total"];
-	        this.itemType = source["itemType"];
-	        this.rankType = source["rankType"];
-	    }
-	}
-	export class GachaUsedCost {
-	    gachaType: string;
-	    cost: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new GachaUsedCost(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.gachaType = source["gachaType"];
-	        this.cost = source["cost"];
-	    }
-	}
-
-}
-
 export namespace main {
 	
 	export class ControlBar {
@@ -72,10 +13,10 @@ export namespace main {
 	    }
 	}
 	export class GachaPieTotals {
-	    t301: database.GachaTotal[];
-	    t302: database.GachaTotal[];
-	    t200: database.GachaTotal[];
-	    t100: database.GachaTotal[];
+	    t301: models.GachaTotal[];
+	    t302: models.GachaTotal[];
+	    t200: models.GachaTotal[];
+	    t100: models.GachaTotal[];
 	
 	    static createFrom(source: any = {}) {
 	        return new GachaPieTotals(source);
@@ -83,10 +24,10 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.t301 = this.convertValues(source["t301"], database.GachaTotal);
-	        this.t302 = this.convertValues(source["t302"], database.GachaTotal);
-	        this.t200 = this.convertValues(source["t200"], database.GachaTotal);
-	        this.t100 = this.convertValues(source["t100"], database.GachaTotal);
+	        this.t301 = this.convertValues(source["t301"], models.GachaTotal);
+	        this.t302 = this.convertValues(source["t302"], models.GachaTotal);
+	        this.t200 = this.convertValues(source["t200"], models.GachaTotal);
+	        this.t100 = this.convertValues(source["t100"], models.GachaTotal);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -108,7 +49,7 @@ export namespace main {
 		}
 	}
 	export class GachaPieDate {
-	    usedCosts: database.GachaUsedCost[];
+	    usedCosts: models.GachaUsedCost[];
 	    totals: GachaPieTotals;
 	
 	    static createFrom(source: any = {}) {
@@ -117,7 +58,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.usedCosts = this.convertValues(source["usedCosts"], database.GachaUsedCost);
+	        this.usedCosts = this.convertValues(source["usedCosts"], models.GachaUsedCost);
 	        this.totals = this.convertValues(source["totals"], GachaPieTotals);
 	    }
 	
@@ -209,6 +150,67 @@ export namespace main {
 		}
 	}
 	
+
+}
+
+export namespace models {
+	
+	export class GachaLog {
+	    uid: string;
+	    gacha_type: string;
+	    time: string;
+	    name: string;
+	    lang: string;
+	    item_type: string;
+	    rank_type: string;
+	    id: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GachaLog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.uid = source["uid"];
+	        this.gacha_type = source["gacha_type"];
+	        this.time = source["time"];
+	        this.name = source["name"];
+	        this.lang = source["lang"];
+	        this.item_type = source["item_type"];
+	        this.rank_type = source["rank_type"];
+	        this.id = source["id"];
+	    }
+	}
+	export class GachaTotal {
+	    total: number;
+	    itemType: string;
+	    rankType: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GachaTotal(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total = source["total"];
+	        this.itemType = source["itemType"];
+	        this.rankType = source["rankType"];
+	    }
+	}
+	export class GachaUsedCost {
+	    gachaType: string;
+	    cost: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new GachaUsedCost(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.gachaType = source["gachaType"];
+	        this.cost = source["cost"];
+	    }
+	}
 
 }
 

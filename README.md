@@ -5,6 +5,8 @@
 这是一个使用 wails v2 + vue3 编写的原神祈愿记录查看工具
 因为想找点事做所以就写了
 
+目前还存在挺多问题，正在缓慢迭代，不建议使用
+
 仅支持 windows 系统
 目前仅支持 简体中文(zh-cn) 的 大陆地区官服的原神。
 如果有人用，想要过多支持或者功能可以发 issues，我看到了会尝试实现
@@ -17,10 +19,9 @@
 
 部署好 wails v2 的开发环境
 在项目根目录下运行 `wails build` 编译成二进制文件
-更多编译参数可以查看 wails 的官方文档:
-https://wails.io/zh-Hans/docs/reference/cli#构建
+更多编译参数可以查看 wails 的官方文档:![链接](https://wails.io/zh-Hans/docs/reference/cli#构建)
 
-# 运行
+## 运行
 
 如果你是 Windows11 系统或者安装了 Edge 浏览器，一般情况下双击就能运行了。
 不过，因为依赖 Webview2，如果在你的系统里找不到 Webview2，程序会让你选择是否下载 Webview2。
@@ -29,11 +30,14 @@ https://wails.io/zh-Hans/docs/reference/cli#构建
 ## 其他
 
 我参考了以下两个项目来实现功能
-https://github.com/sunfkny/genshin-gacha-export
-https://github.com/biuuu/genshin-wish-export
 
-程序内的物品图标来自提瓦特大地图
-https://webstatic.mihoyo.com/ys/app/interactive-map
+-   https://github.com/sunfkny/genshin-gacha-export
+-   https://github.com/biuuu/genshin-wish-export
+
+程序内的物品图标及背景来自提瓦特大地图
+
+-   https://webstatic.mihoyo.com/ys/app/interactive-map
 
 实现代理服务器抓取链接使用的库
-https://github.com/lqqyt2423/go-mitmproxy
+
+-   https://github.com/lqqyt2423/go-mitmproxy

@@ -4,10 +4,10 @@
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
 import { GetNumWithLast } from "../../wailsjs/go/main/App";
+import { models } from "../../wailsjs/go/models";
 import rank3bg from "../assets/images/rank3.png";
 import rank4bg from "../assets/images/rank4.png";
 import rank5bg from "../assets/images/rank5.png";
-import { GachaLog } from "../type";
 const iconSrc = ref("");
 // 进度条的颜色集合
 const progressColor = {
@@ -45,7 +45,7 @@ const itemColors = {
         bg: "#5ba8d6",
     },
 };
-const props = defineProps<{ uid: string; gachaLog: GachaLog }>();
+const props = defineProps<{ uid: string; gachaLog: models.GachaLog }>();
 const data = ref({
     // 距离上一次同等品质的物品出货所花费的次数
     usedCost: 0,
@@ -58,10 +58,10 @@ onMounted(async () => {
     var d = data.value;
     var g = props.gachaLog;
     iconSrc.value = "icon/" + props.gachaLog.name + ".png";
-    if (g.rankType === "3") return;
+    if (g.rank_type === "3") return;
     // 四星，五星物品显示额外内容
-    d.usedCost = await GetNumWithLast(props.uid, props.gachaLog.gachaType, props.gachaLog.id);
-    if (g.rankType === "4") {
+    d.usedCost = await GetNumWithLast(props.uid, props.gachaLog.gacha_type, props.gachaLog.id);
+    if (g.rank_type === "4") {
         progressColor.bg.now = progressColor.bg.rank4;
         progressColor.in.now = progressColor.in.rank4;
         d.percentage = (d.usedCost / 10) * 100;
@@ -87,7 +87,7 @@ onMounted(async () => {
         <div class="info" :id="gachaLog.id">
             <div class="item-name">
                 <span>{{ gachaLog.name }}</span>
-                <!-- 下面这行不能删，删了就会的话如果进度条满了，四星，五星物品的进度条颜色就会变成三星的蓝色。但是为什么？ -->
+                <!-- 下面这行不能删，删了的话如果进度条满了，四星，五星物品的进度条颜色就会变成三星的蓝色。但是为什么？ -->
                 <span v-if="data.usedCost != 0"></span>
                 <span class="time">{{ gachaLog.time }}</span>
             </div>

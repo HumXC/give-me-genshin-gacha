@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"give-me-genshin-gacha/database"
+	"give-me-genshin-gacha/models"
 	"io"
 	"net/http"
 	"net/url"
@@ -47,7 +47,7 @@ type RespDataListItem struct {
 	Time      string `json:"time"`
 	Name      string `json:"name"`
 	Lang      string `json:"lang"`
-	Itemtype  string `json:"item_type"`
+	ItemType  string `json:"item_type"`
 	RankType  string `json:"rank_type"`
 	ID        string `json:"id"`
 }
@@ -137,30 +137,31 @@ func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]str
 	return list, nil
 }
 
-func (f *Fecher) Get(lastIDs map[string]map[string]string) ([]database.GachaLog, error) {
-	result := make([]database.GachaLog, 0)
+func (f *Fecher) Get(lastIDs map[string]map[string]string) ([]models.GachaLog, error) {
+	result := make([]models.GachaLog, 0)
 	for _, t := range GachaType {
 		r, err := f.getGacha(t, lastIDs)
 		if err != nil {
 			return result, err
 		}
 		for _, item := range r {
-			result = append(result, ConvertToDBItem(item))
+			result = append(result, ConvertToDBItem(item, f.Uid))
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
 	return result, nil
 }
 
-func ConvertToDBItem(i RespDataListItem) database.GachaLog {
-	return database.GachaLog{
+func ConvertToDBItem(i RespDataListItem, uid string) models.GachaLog {
+	return models.GachaLog{
 		GachaType: i.GachaType,
 		Time:      i.Time,
 		Name:      i.Name,
 		Lang:      i.Lang,
-		Itemtype:  i.Itemtype,
+		ItemType:  i.ItemType,
 		RankType:  i.RankType,
 		ID:        i.ID,
+		Uid:       uid,
 	}
 }
 

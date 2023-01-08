@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"give-me-genshin-gacha/database"
 	"give-me-genshin-gacha/gacha"
+	"give-me-genshin-gacha/models"
 	"io"
 	"net/http"
 	"os"
@@ -53,21 +53,21 @@ type Message struct {
 }
 
 type GachaPieTotals struct {
-	T301 []database.GachaTotal `json:"t301"`
-	T302 []database.GachaTotal `json:"t302"`
-	T200 []database.GachaTotal `json:"t200"`
-	T100 []database.GachaTotal `json:"t100"`
+	T301 []models.GachaTotal `json:"t301"`
+	T302 []models.GachaTotal `json:"t302"`
+	T200 []models.GachaTotal `json:"t200"`
+	T100 []models.GachaTotal `json:"t100"`
 }
 type GachaPieDate struct {
-	UsedCosts []database.GachaUsedCost `json:"usedCosts"`
-	Totals    GachaPieTotals           `json:"totals"`
+	UsedCosts []models.GachaUsedCost `json:"usedCosts"`
+	Totals    GachaPieTotals         `json:"totals"`
 }
 
 type App struct {
 	ctx         context.Context
 	proxy       *gacha.ProxyServer
 	option      Option
-	DB          *database.GachaDB
+	DB          *models.GachaDB
 	DataDir     string
 	GameDir     string
 	GachaLogUrl string
@@ -138,11 +138,11 @@ func (a *App) SaveOption(opt Option) {
 	a.option = opt
 }
 
-func (a *App) GetLogs(uid, gachaType string, num, page int) []database.GachaLog {
+func (a *App) GetLogs(uid, gachaType string, num, page int) []models.GachaLog {
 	result, err := a.DB.GetLogs(uid, gachaType, num, page)
 	if err != nil {
 		a.putErr("从数据库获取记录时出现错误", err)
-		return make([]database.GachaLog, 0)
+		return make([]models.GachaLog, 0)
 	}
 	return result
 }
@@ -169,7 +169,11 @@ func (a *App) GetPieDatas(uid string) GachaPieDate {
 	return result
 }
 func (a *App) GetUids() []string {
-	return a.DB.Uids
+	result, err := a.DB.GetUids()
+	if err != nil {
+		a.putErr("无法从数据库获取 uid", err)
+	}
+	return result
 }
 
 // 从服务器同步祈愿数据到本地数据库, 如果成功返回 true
@@ -241,7 +245,7 @@ func (a *App) Sync(useProxy bool) string {
 			Msg:  "从服务器获取数据时出现错误, 可能无法同步所有数据 - " + err.Error(),
 		})
 	}
-	err = a.DB.Add(fetcher.Uid, items)
+	err = a.DB.Add(items)
 	if err != nil {
 		a.putErr("写入数据库失败", err)
 		return "fail"
@@ -254,7 +258,7 @@ func NewApp() *App {
 	execP, _ := os.Executable()
 	dataDir := path.Dir(execP)
 	dbName := path.Join(dataDir, "data.db")
-	db, err := database.NewDB(dbName)
+	db, err := models.NewDB(dbName)
 	if err != nil {
 		panic(err)
 	}

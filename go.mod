@@ -3,13 +3,16 @@ module give-me-genshin-gacha
 go 1.18
 
 require (
-	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/wailsapp/wails/v2 v2.2.0
+	gorm.io/gorm v1.24.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -42,6 +45,7 @@ require (
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
 	golang.org/x/text v0.3.7 // indirect
+	gorm.io/driver/sqlite v1.4.3
 )
 
 // replace github.com/wailsapp/wails/v2 v2.2.0 => D:\CLink\Go\pkg\mod
