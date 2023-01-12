@@ -188,7 +188,7 @@ func (a *App) Sync(useProxy bool) string {
 			a.proxy = proxy
 		}
 		runtime.EventsEmit(a.ctx, "proxy-started")
-		url, err := a.proxy.Start("")
+		url, err := a.proxy.Start(gacha.Api)
 		a.GachaLogUrl = url
 		if err != nil {
 			a.putErr("代理服务器启动失败", err)
