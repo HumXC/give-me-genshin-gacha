@@ -179,25 +179,25 @@ func (a *App) GetUids() []string {
 // 从服务器同步祈愿数据到本地数据库, 如果成功返回 true
 func (a *App) Sync(useProxy bool) string {
 	if useProxy {
-		proxy, err := gacha.NewProxyServer()
-		if err != nil {
-			a.putErr("代理服务器创建失败", err)
-			return "fail"
+		if a.proxy == nil {
+			proxy, err := gacha.NewProxyServer()
+			if err != nil {
+				a.putErr("代理服务器创建失败", err)
+				return "fail"
+			}
+			a.proxy = proxy
 		}
-		a.proxy = proxy
-		err = proxy.Start()
+		url, err := a.proxy.Start("")
+		a.GachaLogUrl = url
 		runtime.EventsEmit(a.ctx, "proxy-started")
 		if err != nil {
 			a.putErr("代理服务器启动失败", err)
 			return "fail"
 		}
-		a.GachaLogUrl = <-proxy.Url
-
 		a.proxy = nil
 		if a.GachaLogUrl == "" {
 			return "cancel"
 		}
-		err = proxy.Stop()
 		runtime.EventsEmit(a.ctx, "proxy-stoped")
 		if err != nil {
 			a.putErr("代理服务器关闭失败", err)
@@ -262,6 +262,7 @@ func NewApp() *App {
 	if err != nil {
 		panic(err)
 	}
+
 	return &App{
 		DB:      db,
 		DataDir: dataDir,

@@ -200,7 +200,7 @@ func (d *GachaDB) GetLastIDs() (map[string]map[string]string, error) {
 		result[uid][gachaType] = id
 	}
 	// 在 400 和 301 的 gacha_type 之间选一个最新的，另一个删除
-	// 因为 400 和 301 是两个池子，但是请求的 gacha_type 都是301
+	// 因为 400 和 301 是两个池子，但是通过米哈游的 API 请求的 gacha_type 都是301
 	for uid := range itemsI {
 		i301 := itemsI[uid]["301"]
 		i400 := itemsI[uid]["400"]

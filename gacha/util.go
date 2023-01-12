@@ -52,20 +52,14 @@ func GetGameDir() (string, error) {
 // 从游戏目录中的网络缓存获取旅行者祈愿的 URL
 func GetRawURL(gameDataDir string) (string, error) {
 	// 读取网络日志
-	webCacheName := path.Join(gameDataDir, "webCaches", "Cache", "Cache_Data", "data_2")
-	err := CopyFile(webCacheName, "temp")
-	if err != nil {
-		return "", errors.New("拷贝缓存失败: " + err.Error())
-	}
-	webCache, err := os.ReadFile("temp")
+	webCacheP, err := GetWebCacha(gameDataDir)
 	if err != nil {
 		return "", errors.New("读取缓存失败: " + err.Error())
 	}
-	os.Remove("temp")
+	webCache := *webCacheP
 	// temp 的数据由 “0” 分割
 	// 提取出 temp 里的 urll 字符串
 	var strEnd int
-
 	prefx := "1/0/"
 	for i := len(webCache) - 1; i > 0; i-- {
 		b := webCache[i]
@@ -78,7 +72,6 @@ func GetRawURL(gameDataDir string) (string, error) {
 		if strEnd == 0 {
 			continue
 		}
-
 		// 将数据以 “0” 分段
 		str := string(webCache[i+1 : strEnd+1])
 		strEnd = 0
@@ -96,34 +89,31 @@ func GetRawURL(gameDataDir string) (string, error) {
 	return "", errors.New("没有找到祈愿链接，尝试在游戏里打开祈愿历史记录页面")
 }
 
-// 复制被占用的文件
-func CopyFile(src, dist string) error {
+// 读取游戏目录内的网络缓存
+func GetWebCacha(gameDataDir string) (*[]byte, error) {
 	//参考，搜了很久。tnnd
 	// https://github.com/golang/go/issues/46164
 	// http://zplutor.github.io/2018/08/26/file-share-mode-and-access-rights/
-	path, err := syscall.UTF16PtrFromString(src)
+	result := make([]byte, 2048)
+	fileName := path.Join(gameDataDir, "webCaches", "Cache", "Cache_Data", "data_2")
+	ptr, err := syscall.UTF16PtrFromString(fileName)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	newFile, err := os.Create(dist)
+	f, err := syscall.CreateFile(ptr, syscall.GENERIC_READ|syscall.GENERIC_WRITE, syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE|syscall.FILE_SHARE_DELETE, nil, syscall.OPEN_EXISTING, 0, 0)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer newFile.Close()
-	f, err := syscall.CreateFile(path, syscall.GENERIC_READ|syscall.GENERIC_WRITE, syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE|syscall.FILE_SHARE_DELETE, nil, syscall.OPEN_EXISTING, 0, 0)
-	if err != nil {
-		return err
-	}
-	b := make([]byte, 512)
+	defer syscall.Close(f)
+	b := make([]byte, 1024)
 	for {
 		n, err := syscall.Read(f, b)
 		if n == 0 {
-			syscall.Close(f)
-			return nil
+			return &result, nil
 		}
 		if err != nil {
-			return err
+			return nil, err
 		}
-		newFile.Write(b)
+		result = append(result, b[:n]...)
 	}
 }

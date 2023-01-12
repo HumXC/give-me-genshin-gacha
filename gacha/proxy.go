@@ -1,6 +1,8 @@
 package gacha
 
+// 提供系统代理相关的功能
 import (
+	"errors"
 	"net"
 	"strings"
 
@@ -9,97 +11,119 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-type addHeader struct {
+// TODO: 关于线程安全
+// go-mitmproxy/proxy 的插件
+// 查找指定的 URL 然后返回
+type urlFinder struct {
 	proxy.BaseAddon
-	url chan (string)
+	SavedURL  chan string
+	TargetURL string
 }
 
-func (a *addHeader) Requestheaders(f *proxy.Flow) {
+func (a *urlFinder) Requestheaders(f *proxy.Flow) {
 	url := f.Request.URL.String()
-	if strings.HasPrefix(url, Api) {
-		a.url <- url
+	if strings.HasPrefix(url, a.TargetURL) {
+		a.SavedURL <- url
 	}
 }
+
+type systemProxyInfo struct {
+	Server   string
+	IsEnable bool
+	Override string
+}
+
+// 打开注册表获取系统代理的相关信息
 func openProxyReg() (registry.Key, error) {
 	return registry.OpenKey(registry.CURRENT_USER,
 		"Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", registry.ALL_ACCESS)
 }
-func SystemProxyAddr() (string, error) {
+
+// 获取当前系统代理的信息
+func GetSystemProxyInfo() (result systemProxyInfo, e error) {
 	key, err := openProxyReg()
 	if err != nil {
-		return "", nil
+		return
 	}
-	v, _, err := key.GetStringValue("ProxyServer")
+	server, _, err := key.GetStringValue("ProxyServer")
 	if err != nil {
-		return "", nil
+		e = err
+		return
 	}
-	return v, nil
-}
-func SystemProxyOverride() (string, error) {
-	key, err := openProxyReg()
+	override, _, err := key.GetStringValue("ProxyOverride")
 	if err != nil {
-		return "", nil
+		e = err
+		return
 	}
-	v, _, err := key.GetStringValue("ProxyOverride")
+	isEnable, _, err := key.GetIntegerValue("ProxyEnable")
 	if err != nil {
-		return "", nil
+		e = err
+		return
 	}
-	return v, nil
-}
-func IsEnableSystemProxy() (bool, error) {
-	key, err := openProxyReg()
-	if err != nil {
-		return false, nil
-	}
-	v, _, err := key.GetIntegerValue("ProxyEnable")
-	if err != nil {
-		return false, nil
-	}
-	return v != 0, nil
+	result.Server = server
+	result.Override = override
+	result.IsEnable = isEnable != 0
+	return result, nil
 }
 
 type ProxyServer struct {
-	proxy                *proxy.Proxy
-	Url                  chan (string)
-	IsRunning            bool
-	defaultProxyAddr     string
-	defaultProxyEnable   bool
-	defaultProxyOverride string
+	proxy     *proxy.Proxy
+	err       chan error
+	finder    *urlFinder
+	isRunning bool // proxy 的运行状态
+	isStarted bool // 是否有正在获取 URL 的任务
+	isClosed  bool
+	info      systemProxyInfo
 }
 
-func (p *ProxyServer) Start() error {
-	addr, _ := SystemProxyAddr()
-	enable, _ := IsEnableSystemProxy()
-	override, _ := SystemProxyOverride()
-	p.defaultProxyAddr = addr
-	p.defaultProxyEnable = enable
-	p.defaultProxyOverride = override
-	go func() {
-		// TODO: 错误处理
-		p.proxy.Start()
-	}()
-	err := gosysproxy.SetGlobalProxy(p.proxy.Opts.Addr, override)
+// 开启代理服务器并尝试捕获 URL
+// targetURL 是希望匹配的 URL 列表
+// 代理服务器会以 strings.HasPrefix(url, targetURL) 的方式匹配 URL
+// 获取到 URL 后自动调用 Stop() , 因为代理服务器无法响应祈愿页面的 https 请求
+// 感觉就像是断网了, 但是只要获取到了链接, 那么目的就达到了
+// 在调用 Close() 之前, Start() 可以多次调用
+func (p *ProxyServer) Start(targetURL string) (string, error) {
+	if p.isStarted {
+		return "", errors.New("代理服务器正在进行任务")
+	}
+	if p.isClosed {
+		return "", errors.New("代理服务器已被销毁，需要重新创建")
+	}
+	if !p.isRunning {
+		go func() {
+			p.err <- p.proxy.Start()
+		}()
+	}
+	info, err := GetSystemProxyInfo()
 	if err != nil {
-		return err
+		return "", err
+	}
+	p.info = info
+	p.finder.TargetURL = targetURL
+	err = gosysproxy.SetGlobalProxy(p.proxy.Opts.Addr, info.Override)
+	if err != nil {
+		return "", err
 	}
 	gosysproxy.Flush()
 	if err != nil {
-		return err
+		return "", err
 	}
-	p.IsRunning = true
-	return nil
+	p.isRunning = true
+	defer p.Stop()
+	select {
+	case savedURL := <-p.finder.SavedURL:
+		return savedURL, nil
+	case err := <-p.err:
+		return "", err
+	}
 }
 
+// 恢复系统原有的代理设置, 一般用于中断 Start() 方法
 func (p *ProxyServer) Stop() error {
-	defer recover()
-	close(p.Url)
-	if !p.defaultProxyEnable {
-		err := gosysproxy.Off()
-		if err != nil {
-			return err
-		}
+	if !p.isStarted {
+		return nil
 	}
-	err := gosysproxy.SetGlobalProxy(p.defaultProxyAddr, p.defaultProxyOverride)
+	err := gosysproxy.SetGlobalProxy(p.info.Server, p.info.Override)
 	if err != nil {
 		return err
 	}
@@ -107,15 +131,38 @@ func (p *ProxyServer) Stop() error {
 	if err != nil {
 		return err
 	}
-	err = p.proxy.Close()
-	if err != nil {
-		return err
+	if !p.info.IsEnable {
+		err := gosysproxy.Off()
+		if err != nil {
+			return err
+		}
 	}
-	p.IsRunning = false
-	p.proxy = nil
+	p.isStarted = false
 	return nil
 }
 
+// 关闭代理服务器并且
+func (p *ProxyServer) Close() (err error) {
+	if p.isStarted {
+		err = p.Stop()
+		if err != nil {
+			return
+		}
+
+	}
+	if p.isRunning {
+		err = p.proxy.Close()
+		if err != nil {
+			return err
+		}
+	}
+	close(p.err)
+	close(p.finder.SavedURL)
+	p.isClosed = true
+	return
+}
+
+// 创建一个代理服务器，只用于捕获请求的 URL
 func NewProxyServer() (*ProxyServer, error) {
 	freeAddr, err := GetFreeAddr()
 	if err != nil {
@@ -130,23 +177,24 @@ func NewProxyServer() (*ProxyServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	addon := &addHeader{
-		url: make(chan string),
+	addon := &urlFinder{
+		SavedURL:  make(chan string),
+		TargetURL: "",
 	}
 	pro.AddAddon(addon)
-
 	p := &ProxyServer{
-		Url:   addon.url,
-		proxy: pro,
+		proxy:  pro,
+		finder: addon,
 	}
 	return p, nil
 }
+
+// 获取有可用端口的 localhost 地址
 func GetFreeAddr() (string, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		return "", err
 	}
-
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
 		return "", err
