@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { GetConfig } from "../wailsjs/go/main/App";
+import { toggleTheme } from "./util";
 const route = useRoute();
 const router = useRouter();
 const routeTo = (path: string) => {
@@ -9,8 +11,9 @@ const routeTo = (path: string) => {
         query: { ...route.query },
     });
 };
-onMounted(() => {
-    routeTo("/home");
+onMounted(async () => {
+    let config = await GetConfig();
+    toggleTheme(config.isDarkTheme);
 });
 </script>
 
@@ -18,7 +21,7 @@ onMounted(() => {
     <div style="display: flex; height: 100%">
         <!-- 左边功能栏 -->
         <div id="leftbar">
-            <button class="button-home" @click="routeTo('/home')">Home</button>
+            <button class="button-home" @click="routeTo('/')">Home</button>
             <button class="button-settings" @click="routeTo('/settings')">Settings</button>
         </div>
         <!-- 右边展示页 -->
@@ -51,11 +54,10 @@ onMounted(() => {
     display: flex;
     flex-wrap: wrap;
     flex-flow: column;
-    background-color: rgba(21, 89, 225, 0.451);
 }
 #view {
     margin: 0;
-    width: 100%;
-    background-color: rgba(16, 146, 151, 0.505);
+    height: 100%;
+    overflow-x: hidden;
 }
 </style>

@@ -4,6 +4,7 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 )
@@ -12,13 +13,18 @@ type savedURL struct {
 	Uid string `json:"uid"`
 	URL string `json:"url"`
 }
-
+type ShowGacha struct {
+	G301 bool `json:"g301"`
+	G302 bool `json:"g302"`
+	G200 bool `json:"g200"`
+	G100 bool `json:"g100"`
+}
 type Config struct {
 	filePath    string
 	SavedURLs   []savedURL `json:"savedUrls"` // 祈愿页面的 URL
 	Language    string     `json:"language"`
 	SelectedUid string     `json:"selectedUid"`
-	ShowGacha   []string   `json:"showGacha"`
+	ShowGacha   ShowGacha  `json:"showGacha"`
 	IsDarkTheme bool       `json:"isDarkTheme"`
 	IsAutoSync  bool       `json:"isAutoSync"`
 	IsUseProxy  bool       `json:"isUseProxy"`
@@ -33,7 +39,10 @@ func GetConfig(filePath string) (*Config, error) {
 	c := Config{
 		filePath:  filePath,
 		SavedURLs: make([]savedURL, 0),
-		ShowGacha: make([]string, 0),
+		ShowGacha: ShowGacha{
+			G301: true,
+			G302: true,
+		},
 	}
 	if f, err := os.Open(filePath); err == nil {
 		defer f.Close()
@@ -83,5 +92,7 @@ func (c *Config) Save() error {
 
 // 提供一个 Config cfg, 把 cfg 的变量值同步到自身
 func (c *Config) Put(cfg Config) {
-
+	cfg.filePath = c.filePath
+	*c = cfg
+	fmt.Println(c)
 }

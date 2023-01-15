@@ -45,6 +45,16 @@ type App struct {
 	WebView webview.WebView
 }
 
+// 获取配置
+func (a *App) GetConfig() config.Config {
+	return *a.Config
+}
+
+// 修改配置
+func (a *App) PutConfig(cfg config.Config) {
+	a.Config.Put(cfg)
+}
+
 func (a *App) GetNumWithLast(uid, gachaType, id string) int {
 	result, err := a.DB.GetNumWithLast(uid, gachaType, id)
 	if err != nil {
