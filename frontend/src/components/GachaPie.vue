@@ -2,8 +2,9 @@
 import { init } from "echarts";
 import { ElCard } from "element-plus";
 import { onMounted, ref } from "vue";
-import { gachaTypeToName } from "../main";
-
+let gachaTypeToName = (a: any) => {
+    return "";
+};
 // gachaType: 祈愿类型，showType: 显示类型
 // all 是点击饼图中心按钮时传递的参数，其他是点击饼图某一块传递对应的参数
 const emit = defineEmits<{

@@ -1,5 +1,5 @@
 html {
-    background: rgba(255, 255, 255, 0.671);
+    background: rgba(255, 255, 255, 0);
     text-align: center;
     color: transparent;
     -webkit-backdrop-filter: blur(100px);
@@ -8,6 +8,7 @@ html {
 
 body {
     margin: 0;
+    padding: 0;
     font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
         "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 }
@@ -20,6 +21,11 @@ body {
 }
 
 #app {
-    height: 100vh;
+    position: absolute;
+    margin: 0;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
     text-align: center;
 }

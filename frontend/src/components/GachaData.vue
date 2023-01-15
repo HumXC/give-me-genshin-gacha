@@ -7,10 +7,12 @@ import { Close } from "@element-plus/icons-vue";
 import { onMounted, ref } from "vue";
 import { GetLogs } from "../../wailsjs/go/main/App";
 import { models } from "../../wailsjs/go/models";
-import { gachaTypeToName, sleep } from "../main";
+import { sleep } from "../util";
 import GachaItem from "./GachaItem.vue";
 let data = ref({ isShow: false, uid: "", gachaType: "" });
-
+let gachaTypeToName = (a: any) => {
+    return "";
+};
 const defaultGachaLogs = () => {
     return new Map([
         ["301", { count: 0, logs: new Array<models.GachaLog>(), page: 0, isLoaded: false }],
