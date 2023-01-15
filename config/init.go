@@ -4,7 +4,6 @@ package config
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 )
@@ -94,5 +93,4 @@ func (c *Config) Save() error {
 func (c *Config) Put(cfg Config) {
 	cfg.filePath = c.filePath
 	*c = cfg
-	fmt.Println(c)
 }
