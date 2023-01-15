@@ -3,22 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"give-me-genshin-gacha/config"
 	"give-me-genshin-gacha/gacha"
 	"give-me-genshin-gacha/models"
+	"give-me-genshin-gacha/webview"
 	"io"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 	"time"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// 前端定义和使用的数据, 应该与下面文件里的定义相同
-// frontend/src/type.ts
-// start
+// 前端使用的数据
 type PieData struct {
 	UsedCost   int    `json:"usedCost"`
 	Arms3Total int    `json:"arms3Total"`
@@ -28,30 +25,6 @@ type PieData struct {
 	Role5Total int    `json:"role5Total"`
 	GachaType  string `json:"gachaType"`
 }
-type OtherOption struct {
-	AutoSync  bool `json:"autoSync"`
-	UseProxy  bool `json:"useProxy"`
-	DarkTheme bool `json:"darkTheme"`
-}
-type ShowGacha struct {
-	RoleUp    bool `json:"roleUp"`
-	ArmsUp    bool `json:"armsUp"`
-	Permanent bool `json:"permanent"`
-	Start     bool `json:"start"`
-}
-type ControlBar struct {
-	SelectedUid string `json:"selectedUid"`
-}
-type Option struct {
-	ShowGacha   ShowGacha   `json:"showGacha"`
-	OtherOption OtherOption `json:"otherOption"`
-	ControlBar  ControlBar  `json:"controlBar"`
-}
-type Message struct {
-	Type string `json:"type"`
-	Msg  string `json:"msg"`
-}
-
 type GachaPieTotals struct {
 	T301 []models.GachaTotal `json:"t301"`
 	T302 []models.GachaTotal `json:"t302"`
@@ -64,84 +37,26 @@ type GachaPieDate struct {
 }
 
 type App struct {
-	ctx         context.Context
-	proxy       *gacha.ProxyServer
-	option      Option
-	DB          *models.GachaDB
-	DataDir     string
-	GameDir     string
-	GachaLogUrl string
+	ctx     context.Context
+	proxy   *gacha.ProxyServer
+	DB      *models.GachaDB
+	DataDir string
+	Config  *config.Config
+	WebView webview.WebView
 }
 
-func (a *App) putErr(info string, err error) {
-	m := fmt.Sprint(info, "-", err)
-	runtime.EventsEmit(a.ctx, "alert", Message{
-		Type: "error",
-		Msg:  m,
-	})
-	runtime.LogError(a.ctx, m)
-}
 func (a *App) GetNumWithLast(uid, gachaType, id string) int {
 	result, err := a.DB.GetNumWithLast(uid, gachaType, id)
 	if err != nil {
-		a.putErr("从数据库获取计数时出现错误", err)
+		a.WebView.Alert.Error("从数据库获取计数时出现错误:" + err.Error())
 		return result
 	}
 	return result
 }
-func (a *App) GetOption() Option {
-	name := path.Join(a.DataDir, "option.json")
-	opt := Option{
-		ShowGacha: ShowGacha{
-			RoleUp: true,
-		},
-	}
-	f, err := os.Open(name)
-	if os.IsNotExist(err) {
-		a.SaveOption(opt)
-		return opt
-	}
-	defer f.Close()
-	d, err := io.ReadAll(f)
-	if err != nil {
-		a.putErr("加载配置文件时出现错误", err)
-		return opt
-	}
-	err = json.Unmarshal(d, &opt)
-	if err != nil {
-		a.putErr("加载配置文件时出现错误", err)
-	}
-	a.option = opt
-	return opt
-}
-func (a *App) SaveOption(opt Option) {
-	name := path.Join(a.DataDir, "option.json")
-	b, err := json.Marshal(opt)
-	if err != nil {
-		a.putErr("保存配置文件时出现错误", err)
-		return
-	}
-	err = os.Remove(name)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			a.putErr("保存配置文件时出现错误", err)
-			return
-		}
-	}
-	f, err := os.Create(name)
-	if err != nil {
-		a.putErr("保存配置文件时出现错误", err)
-		return
-	}
-	defer f.Close()
-	f.Write(b)
-	a.option = opt
-}
-
 func (a *App) GetLogs(uid, gachaType string, num, page int) []models.GachaLog {
 	result, err := a.DB.GetLogs(uid, gachaType, num, page)
 	if err != nil {
-		a.putErr("从数据库获取记录时出现错误", err)
+		a.WebView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
 		return make([]models.GachaLog, 0)
 	}
 	return result
@@ -152,12 +67,12 @@ func (a *App) GetPieDatas(uid string) GachaPieDate {
 	result := GachaPieDate{}
 	r, err := a.DB.GetTotals(uid)
 	if err != nil {
-		a.putErr("从数据库获取记录时出现错误", err)
+		a.WebView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
 		return result
 	}
 	c, err := a.DB.GetUsedCost(uid)
 	if err != nil {
-		a.putErr("从数据库获取记录时出现错误", err)
+		a.WebView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
 		return result
 	}
 	result.UsedCosts = c
@@ -165,92 +80,20 @@ func (a *App) GetPieDatas(uid string) GachaPieDate {
 	result.Totals.T302 = r["302"]
 	result.Totals.T200 = r["200"]
 	result.Totals.T100 = r["100"]
-
 	return result
 }
 func (a *App) GetUids() []string {
 	result, err := a.DB.GetUids()
 	if err != nil {
-		a.putErr("无法从数据库获取 uid", err)
+		a.WebView.Alert.Error("无法从数据库获取 uid:" + err.Error())
 	}
 	return result
 }
 
-// 从服务器同步祈愿数据到本地数据库, 如果成功返回 true
+// 从服务器同步祈愿数据到本地数据库, 如果成功返回 uid
 func (a *App) Sync(useProxy bool) string {
-	if useProxy {
-		if a.proxy == nil {
-			proxy, err := gacha.NewProxyServer()
-			if err != nil {
-				a.putErr("代理服务器创建失败", err)
-				return "fail"
-			}
-			a.proxy = proxy
-		}
-		runtime.EventsEmit(a.ctx, "proxy-started")
-		url, err := a.proxy.Start(gacha.Api)
-		a.GachaLogUrl = url
-		if err != nil {
-			a.putErr("代理服务器启动失败", err)
-			return "fail"
-		}
-		a.proxy = nil
-		if a.GachaLogUrl == "" {
-			return "cancel"
-		}
-		runtime.EventsEmit(a.ctx, "proxy-stoped")
-		if err != nil {
-			a.putErr("代理服务器关闭失败", err)
-			return "fail"
-		}
-		runtime.EventsEmit(a.ctx, "alert", Message{
-			Type: "info",
-			Msg:  "成功通过代理取得了祈愿链接，正在同步哦",
-		})
-	} else {
-		if a.GameDir == "" {
-			dir, err := gacha.GetGameDir()
-			if err != nil {
-				a.putErr("获取游戏目录失败", err)
-				return "fail"
-			}
-			a.GameDir = dir
-		}
-		url, err := gacha.GetRawURL(a.GameDir)
-		if err != nil {
-			a.putErr("无法获取祈愿链接", err)
-			return "fail"
-		}
-		a.GachaLogUrl = url
-	}
-
-	fetcher, err := gacha.NewFetcher(a.ctx, a.GachaLogUrl)
-	if err != nil {
-		a.putErr("无法创建爬虫", err)
-		return "fail"
-	}
-	lastIds, err := a.DB.GetLastIDs()
-	if err != nil {
-		a.putErr("无法从数据库获取最新的物品", err)
-		return "fail"
-	}
-	items, err := fetcher.Get(lastIds)
-	if err != nil {
-		if err.Error() == "authkey timeout" {
-			a.GachaLogUrl = ""
-			return "authkey timeout"
-		}
-		runtime.EventsEmit(a.ctx, "alert", Message{
-			Type: "warning",
-			Msg:  "从服务器获取数据时出现错误, 可能无法同步所有数据 - " + err.Error(),
-		})
-	}
-	err = a.DB.Add(items)
-	if err != nil {
-		a.putErr("写入数据库失败", err)
-		return "fail"
-	}
-	return fetcher.Uid
+	a.WebView.Alert.Error("ceshi1")
+	return "fdfdfdfd"
 }
 
 // NewApp creates a new App application struct
@@ -269,26 +112,24 @@ func NewApp() *App {
 	}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
-
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	// 前端发来的关闭代理请求
-	runtime.EventsOn(a.ctx, "stop-proxy", func(optionalData ...interface{}) {
-		if a.proxy == nil {
-			return
-		}
-		err := a.proxy.Stop()
-		if err != nil {
-			a.putErr("关闭代理时出现错误", err)
-		}
-	})
+	a.WebView = webview.NewWebView(ctx)
+	config, err := config.GetConfig(path.Join(a.DataDir, "config.json"))
+	if err != nil {
+		panic(err)
+	}
+	a.Config = config
+	a.WebView.Alert.Error("haihai")
 }
 
 func (a *App) shutdown(ctx context.Context) {
 	if a.proxy != nil {
-		_ = a.proxy.Stop()
+		_ = a.proxy.Close()
+	}
+	err := a.Config.Save()
+	if err != nil {
+		panic(err)
 	}
 }
 

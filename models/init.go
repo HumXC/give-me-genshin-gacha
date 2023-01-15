@@ -63,7 +63,7 @@ func (d *GachaDB) GetLogs(uid, gachaType string, num, page int) ([]GachaLog, err
 	return result, nil
 }
 
-// 获取与某物品与其同品质的上一件物品之间的祈愿次数
+// 返回与某物品同品质的上一件物品 之间的祈愿次数
 func (d *GachaDB) GetNumWithLast(uid, gachaType, id string) (int, error) {
 	query := d.db.Table("gacha_logs").
 		Select("rank_type").

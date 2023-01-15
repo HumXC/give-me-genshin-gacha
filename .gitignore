@@ -29,4 +29,5 @@ frontend/wailsjs
 data.db
 temp
 option.json
+config.json
 icons

@@ -1,49 +1,34 @@
 package gacha
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"give-me-genshin-gacha/models"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-var GachaType map[string]string
+const (
+	// 角色活动祈愿
+	GachaType301 = "301"
+	// 武器活动祈愿
+	GachaType302 = "302"
+	// 常驻祈愿
+	GachaType200 = "200"
+	// 新手祈愿
+	GachaType100 = "100"
+)
 
-func init() {
-	GachaType = make(map[string]string)
-	GachaType["角色活动祈愿"] = "301"
-	GachaType["武器活动祈愿"] = "302"
-	GachaType["常驻祈愿"] = "200"
-	GachaType["新手祈愿"] = "100"
-}
-
-func ParseGachaType(gachaType string) string {
-	switch gachaType {
-	case "301":
-		return "角色活动祈愿"
-	case "302":
-		return "武器活动祈愿"
-	case "200":
-		return "常驻祈愿"
-	case "100":
-		return "新手祈愿"
-	default:
-		return "未知祈愿类型: " + gachaType
-	}
-}
+var ErrUrlTestFailed = errors.New("url test failed")
+var ErrPageEnd = errors.New("page end")
 
 type RespDataListItem struct {
 	Uid       string `json:"uid"`
 	GachaType string `json:"gacha_type"`
-	ItemId    string `json:"item_id"`
-	Count     string `json:"count"`
 	Time      string `json:"time"`
 	Name      string `json:"name"`
 	Lang      string `json:"lang"`
@@ -64,119 +49,118 @@ type Response struct {
 	Data    RespData `json:"data"`
 	Region  string   `json:"region"`
 }
-type Fecher struct {
-	Uid string
-	url *url.URL
-	ctx context.Context
+type Fetcher struct {
+	uid    string
+	lock   sync.Mutex
+	rawURL *url.URL
 }
 
-// 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
-// lastIDs map[uid]map[gachaType][lastID]
-func (f *Fecher) getGacha(gachaTypeNum string, lastIDs map[string]map[string]string) ([]RespDataListItem, error) {
-	list := make([]RespDataListItem, 0)
+// 获取此祈愿链接的 Uid
+func (f *Fetcher) Uid() string {
+	return f.uid
+}
+
+// 进行一次请求, 测试 URL 是否可用
+func (f *Fetcher) test() error {
+	type response struct {
+		Message string `json:"message"`
+	}
+	resp := response{}
+	url := f.rawURL.RequestURI()
+	r, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return err
+	}
+	if resp.Message != "OK" {
+		return fmt.Errorf(url+" - "+resp.Message, ErrUrlTestFailed)
+	}
+	return nil
+}
+
+// 返回一个用于获取祈愿数据的闭包
+// 如果没有下一页了, 则返回 ErrPageEnd 错误
+func (f *Fetcher) Get(gachaType, endID string) func() ([]RespDataListItem, error) {
 	page := 1
-	endID := "0"
-	if len(list) > 0 {
-		endID = list[len(list)-1].ID
-	}
-	query := f.url.Query()
-
-	query.Set("gacha_type", gachaTypeNum)
-	for {
-		flag := false
-		runtime.LogInfof(f.ctx, "正在获取 [%s] 第 %d 页", ParseGachaType(gachaTypeNum), page)
-		query.Set("page", strconv.Itoa(page))
-		query.Set("end_id", endID)
-		f.url.RawQuery = query.Encode()
-		url_ := f.url.String()
-		resp, err := http.DefaultClient.Get(url_)
-		if err != nil {
-			return list, err
+	isEnd := false
+	// end 用于翻页
+	end := "0"
+	return func() ([]RespDataListItem, error) {
+		if isEnd {
+			return []RespDataListItem{}, ErrPageEnd
 		}
-		jsonData, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return list, err
-		}
-		var r Response
-		err = json.Unmarshal(jsonData, &r)
-		if err != nil {
-			return list, err
-		}
-		if r.Message != "OK" {
-			return list, errors.New(r.Message)
-		}
-		if len(r.Data.List) == 0 {
-			break
-		}
-		page++
-		l := r.Data.List
-		if _, ok := lastIDs[f.Uid]; !ok {
-			lastIDs[f.Uid] = make(map[string]string)
-		}
-		// 提取出"更新"的条目
-		for i, v := range l {
-			if f.Uid == "" {
-				f.Uid = v.Uid
-			}
-			if id, ok := lastIDs[v.Uid][v.GachaType]; !ok {
-				break
-			} else if id != v.ID {
-				continue
-			}
-			list = append(list, l[:i]...)
-			flag = true
-			break
-		}
-		if flag {
-			break
-		}
-		endID = l[len(l)-1].ID
-		list = append(list, l...)
-		time.Sleep(300 * time.Millisecond)
-	}
-	return list, nil
-}
-
-func (f *Fecher) Get(lastIDs map[string]map[string]string) ([]models.GachaLog, error) {
-	result := make([]models.GachaLog, 0)
-	for _, t := range GachaType {
-		r, err := f.getGacha(t, lastIDs)
+		result, err := f.fetch(gachaType, end, page)
 		if err != nil {
 			return result, err
 		}
-		for _, item := range r {
-			result = append(result, ConvertToDBItem(item, f.Uid))
+		page++
+		length := len(result)
+		end = result[length-1].ID
+		// 筛选出更新的物品
+		for i, item := range result {
+			if item.ID == endID {
+				isEnd = true
+				return result[:i], ErrPageEnd
+			}
 		}
-		time.Sleep(500 * time.Millisecond)
+		return result, nil
 	}
+}
+
+// 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
+// page 的值从 1 开始
+func (f *Fetcher) fetch(gachaType, endID string, page int) ([]RespDataListItem, error) {
+	result := make([]RespDataListItem, 20)
+	f.lock.Lock()
+	url := f.rawURL
+	query := url.Query()
+	query.Set("gacha_type", gachaType)
+	query.Set("end_id", endID)
+	query.Set("page", strconv.Itoa(page))
+	url.RawQuery = query.Encode()
+	url_ := url.String()
+	resp, err := http.Get(url_)
+	if err != nil {
+		return result, err
+	}
+	jsonData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return result, err
+	}
+	var r Response
+	err = json.Unmarshal(jsonData, &r)
+	if err != nil {
+		return result, err
+	}
+	if r.Message != "OK" {
+		return result, errors.New(r.Message)
+	}
+	l := r.Data.List
+	result = append(result, l...)
+	time.Sleep(300 * time.Millisecond)
+	f.lock.Unlock()
 	return result, nil
 }
 
-func ConvertToDBItem(i RespDataListItem, uid string) models.GachaLog {
-	return models.GachaLog{
-		GachaType: i.GachaType,
-		Time:      i.Time,
-		Name:      i.Name,
-		Lang:      i.Lang,
-		ItemType:  i.ItemType,
-		RankType:  i.RankType,
-		ID:        i.ID,
-		Uid:       uid,
-	}
-}
-
-func NewFetcher(ctx context.Context, rawURL string) (*Fecher, error) {
+// 根据祈愿的链接创建爬虫
+func NewFetcher(rawURL string) (*Fetcher, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
 	}
 	query := u.Query()
 	query.Set("size", "20")
-	query.Set("end_id", "0")
 	u.RawQuery = query.Encode()
-	return &Fecher{
-		Uid: "",
-		url: u,
-		ctx: ctx,
-	}, nil
+	f := &Fetcher{
+		uid:    "",
+		rawURL: u,
+	}
+	return f, f.test()
 }

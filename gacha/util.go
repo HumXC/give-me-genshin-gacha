@@ -2,7 +2,8 @@ package gacha
 
 import (
 	"bufio"
-	"errors"
+	"fmt"
+	"give-me-genshin-gacha/models"
 	"os"
 	"path"
 	"strings"
@@ -15,13 +16,13 @@ const Api = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
 func GetGameDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", errors.New("获取用户失败目录: " + err.Error())
+		return "", fmt.Errorf("获取用户失败目录: %w", err)
 	}
 	// 读取原神日志文件
 	logFileName := path.Join(homeDir, "AppData", "LocalLow", "miHoYo", "原神", "output_log.txt")
 	logFile, err := os.Open(logFileName)
 	if err != nil {
-		return "", errors.New("读取游戏日志失败: " + err.Error())
+		return "", fmt.Errorf("读取游戏日志失败: %w", err)
 	}
 	defer logFile.Close()
 	logScanner := bufio.NewScanner(logFile)
@@ -34,7 +35,7 @@ func GetGameDir() (string, error) {
 		line := logScanner.Text()
 		err := logScanner.Err()
 		if err != nil {
-			return "", errors.New("日志解析错误: " + err.Error())
+			return "", fmt.Errorf("日志解析错误: %w", err)
 		}
 		if !strings.Contains(line, "Warmup file") {
 			continue
@@ -46,7 +47,7 @@ func GetGameDir() (string, error) {
 		i := strings.LastIndex(line, searchName)
 		return line[12 : i+len(searchName)], nil
 	}
-	return "", errors.New("没有找到游戏目录, 进入游戏后再尝试")
+	return "", fmt.Errorf("没有找到游戏目录, 进入游戏后再尝试")
 }
 
 // 从游戏目录中的网络缓存获取旅行者祈愿的 URL
@@ -54,7 +55,7 @@ func GetRawURL(gameDataDir string) (string, error) {
 	// 读取网络日志
 	webCacheP, err := GetWebCacha(gameDataDir)
 	if err != nil {
-		return "", errors.New("读取缓存失败: " + err.Error())
+		return "", fmt.Errorf("读取缓存失败: %w", err)
 	}
 	webCache := *webCacheP
 	// temp 的数据由 “0” 分割
@@ -86,7 +87,7 @@ func GetRawURL(gameDataDir string) (string, error) {
 		return str[4:], nil
 
 	}
-	return "", errors.New("没有找到祈愿链接，尝试在游戏里打开祈愿历史记录页面")
+	return "", fmt.Errorf("没有找到祈愿链接，尝试在游戏里打开祈愿历史记录页面")
 }
 
 // 读取游戏目录内的网络缓存
@@ -115,5 +116,19 @@ func GetWebCacha(gameDataDir string) (*[]byte, error) {
 			return nil, err
 		}
 		result = append(result, b[:n]...)
+	}
+}
+
+// 将爬虫的数据转换成数据库的数据
+func ConvertToDBItem(i RespDataListItem, uid string) models.GachaLog {
+	return models.GachaLog{
+		GachaType: i.GachaType,
+		Time:      i.Time,
+		Name:      i.Name,
+		Lang:      i.Lang,
+		ItemType:  i.ItemType,
+		RankType:  i.RankType,
+		ID:        i.ID,
+		Uid:       uid,
 	}
 }
