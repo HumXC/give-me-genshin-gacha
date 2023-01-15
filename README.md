@@ -19,7 +19,7 @@
 
 部署好 wails v2 的开发环境
 在项目根目录下运行 `wails build` 编译成二进制文件
-更多编译参数可以查看 wails 的官方文档:![链接](https://wails.io/zh-Hans/docs/reference/cli#构建)
+更多编译参数可以查看 wails 的官方文档: [链接](https://wails.io/zh-Hans/docs/reference/cli#构建 "wails doc")
 
 ## 运行
 
