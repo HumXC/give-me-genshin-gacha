@@ -1,7 +1,6 @@
 html {
-    background: rgba(255, 255, 255, 0);
+    background: transparent;
     text-align: center;
-    color: transparent;
     -webkit-backdrop-filter: blur(100px);
     backdrop-filter: blur(100px);
 }
