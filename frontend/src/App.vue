@@ -11,6 +11,7 @@ const routeTo = (path: string) => {
         query: { ...route.query },
     });
 };
+
 onMounted(async () => {
     let config = await GetConfig();
     toggleTheme(config.isDarkTheme);

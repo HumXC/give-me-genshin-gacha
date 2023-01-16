@@ -7,8 +7,9 @@ import {
     LogPrint,
     LogTrace,
     LogWarning,
+    WindowSetDarkTheme,
+    WindowSetLightTheme,
 } from "../wailsjs/runtime";
-import { WindowSetDarkTheme, WindowSetLightTheme } from "../wailsjs/runtime/runtime";
 export async function sleep(timeout: number) {
     return new Promise<void>((resolve) => {
         setTimeout(() => {
@@ -25,8 +26,20 @@ export const logger = {
     Trace: (msg: string) => LogTrace("[Webview] " + msg),
     Warning: (msg: string) => LogWarning("[Webview] " + msg),
 };
-const _toggleDark = useToggle(useDark());
-export const toggleTheme = (isDark: boolean) => {
+
+// TODO:
+// 关于半透明颜色的 bug
+// 在 main.go 中的 wails.run 函数中设置
+//     WebviewIsTransparent: true,
+//	   WindowIsTranslucent:  true,
+//	   BackdropType:         windows.Acrylic,
+// 使用 _toggledark 切换颜色
+// 会导致前端页面 background-color 的半透明效果丢失
+// 需要鼠标重新点击屏幕恢复
+
+const _isDark = useDark();
+const _toggleDark = useToggle(_isDark);
+export const toggleTheme = async (isDark: boolean) => {
     _toggleDark(isDark);
     if (isDark) {
         WindowSetDarkTheme();
