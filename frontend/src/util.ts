@@ -50,6 +50,10 @@ export const toggleTheme = async (isDark: boolean) => {
 
 // 将 src 的值赋值到 dest 上
 export function copyObjTo(src: any, dest: any) {
+    if (dest === undefined) {
+        dest = src;
+        return;
+    }
     for (let key in dest) {
         if (!src.hasOwnProperty(key)) {
             continue;

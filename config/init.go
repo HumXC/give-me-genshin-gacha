@@ -31,7 +31,7 @@ type Config struct {
 
 var config *Config
 
-func GetConfig(filePath string) (*Config, error) {
+func Get(filePath string) (*Config, error) {
 	if config != nil {
 		return config, nil
 	}
@@ -92,5 +92,14 @@ func (c *Config) Save() error {
 // 提供一个 Config cfg, 把 cfg 的变量值同步到自身
 func (c *Config) Put(cfg Config) {
 	cfg.filePath = c.filePath
+	// TODO: 向 wails 提交 issue
+	// *c = cfg
+	// 不能如此简单地赋值
+	// cfg 来自前端
+	// cfg 里有空切片时，此空切片将指向一个 nil，而不是一个空数组
+	// 在保存 json 时，此空切片会变成 null
+	if len(cfg.SavedURLs) == 0 {
+		cfg.SavedURLs = make([]savedURL, 0)
+	}
 	*c = cfg
 }

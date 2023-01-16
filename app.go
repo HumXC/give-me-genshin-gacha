@@ -125,7 +125,7 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.WebView = webview.NewWebView(ctx)
-	config, err := config.GetConfig(path.Join(a.DataDir, "config.json"))
+	config, err := config.Get(path.Join(a.DataDir, "config.json"))
 	if err != nil {
 		panic(err)
 	}
