@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"give-me-genshin-gacha/app"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -13,7 +14,7 @@ var assets embed.FS
 
 func main() {
 	// Create an instance of the app structure
-	app := NewApp()
+	a := app.NewApp()
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:     "give-me-genshin-gacha",
@@ -24,10 +25,11 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		OnStartup:  app.startup,
-		OnShutdown: app.shutdown,
+		OnStartup:  app.Startup(a),
+		OnShutdown: app.Shutdown(a),
 		Bind: []interface{}{
-			app,
+			a,
+			a.GachaMan,
 		},
 	},
 	)

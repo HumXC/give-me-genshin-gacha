@@ -20,13 +20,12 @@ type ShowGacha struct {
 }
 type Config struct {
 	filePath    string
-	SavedURLs   []savedURL `json:"savedUrls"` // 祈愿页面的 URL
-	Language    string     `json:"language"`
-	SelectedUid string     `json:"selectedUid"`
-	ShowGacha   ShowGacha  `json:"showGacha"`
-	IsDarkTheme bool       `json:"isDarkTheme"`
-	IsAutoSync  bool       `json:"isAutoSync"`
-	IsUseProxy  bool       `json:"isUseProxy"`
+	Language    string    `json:"language"`
+	SelectedUid string    `json:"selectedUid"`
+	ShowGacha   ShowGacha `json:"showGacha"`
+	IsDarkTheme bool      `json:"isDarkTheme"`
+	IsAutoSync  bool      `json:"isAutoSync"`
+	IsUseProxy  bool      `json:"isUseProxy"`
 }
 
 var config *Config
@@ -36,8 +35,7 @@ func Get(filePath string) (*Config, error) {
 		return config, nil
 	}
 	c := Config{
-		filePath:  filePath,
-		SavedURLs: make([]savedURL, 0),
+		filePath: filePath,
 		ShowGacha: ShowGacha{
 			G301: true,
 			G302: true,
@@ -98,8 +96,8 @@ func (c *Config) Put(cfg Config) {
 	// cfg 来自前端
 	// cfg 里有空切片时，此空切片将指向一个 nil，而不是一个空数组
 	// 在保存 json 时，此空切片会变成 null
-	if len(cfg.SavedURLs) == 0 {
-		cfg.SavedURLs = make([]savedURL, 0)
-	}
+	// if len(cfg.SavedURLs) == 0 {
+	// 	cfg.SavedURLs = make([]savedURL, 0)
+	// }
 	*c = cfg
 }
