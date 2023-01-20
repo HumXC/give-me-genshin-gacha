@@ -66,7 +66,7 @@ func (f *Fetcher) test() error {
 		Message string `json:"message"`
 	}
 	resp := response{}
-	url := f.rawURL.RequestURI()
+	url := f.rawURL.String()
 	r, err := http.Get(url)
 	if err != nil {
 		return err
@@ -105,6 +105,9 @@ func (f *Fetcher) Get(gachaType, endID string) func() ([]RespDataListItem, error
 		end = result[length-1].ID
 		// 筛选出更新的物品
 		for i, item := range result {
+			if f.uid == "" {
+				f.uid = item.Uid
+			}
 			if item.ID == endID {
 				isEnd = true
 				return result[:i], ErrPageEnd
