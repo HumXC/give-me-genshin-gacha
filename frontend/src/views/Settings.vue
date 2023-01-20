@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { onMounted, ref, watch } from "vue";
-import { GetConfig, PutConfig } from "../../wailsjs/go/main/App";
+import { GetConfig, PutConfig } from "../../wailsjs/go/app/App";
 import { config } from "../../wailsjs/go/models";
 import SwitchItem from "../components/SwitchItem.vue";
 import { copyObjTo, toggleTheme } from "../util";
@@ -8,7 +8,6 @@ import { copyObjTo, toggleTheme } from "../util";
 const conf = ref(
     new config.Config({
         showGacha: new config.ShowGacha(),
-        savedURLs: new Array<config.savedURL>(),
     })
 );
 onMounted(async () => {

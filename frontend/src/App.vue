@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { GetConfig } from "../wailsjs/go/main/App";
+import { GetConfig } from "../wailsjs/go/app/App";
 import { toggleTheme } from "./util";
 const route = useRoute();
 const router = useRouter();

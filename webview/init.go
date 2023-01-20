@@ -8,8 +8,8 @@ type WebView struct {
 	Alert Alert
 }
 
-func NewWebView(ctx context.Context) WebView {
-	return WebView{
+func NewWebView(ctx context.Context) *WebView {
+	return &WebView{
 		Alert: Alert{
 			ctx: ctx,
 		},

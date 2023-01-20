@@ -19,7 +19,7 @@ func InitDB(name string) error {
 	if err != nil {
 		return err
 	}
-	d.AutoMigrate(&GachaLog{})
+	d.AutoMigrate(&GachaLog{}, &User{})
 	db = d
 	return nil
 }

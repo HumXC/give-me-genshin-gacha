@@ -3,11 +3,13 @@
  -->
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
-import { GetNumWithLast } from "../../wailsjs/go/main/App";
 import { models } from "../../wailsjs/go/models";
 import rank3bg from "../assets/images/rank3.png";
 import rank4bg from "../assets/images/rank4.png";
 import rank5bg from "../assets/images/rank5.png";
+let GetNumWithLast = (a: any, b: any, c: any) => {
+    return 0;
+};
 const iconSrc = ref("");
 // 进度条的颜色集合
 const progressColor = {

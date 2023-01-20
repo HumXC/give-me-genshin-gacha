@@ -27,20 +27,13 @@ type GachaPieDate struct {
 
 type GachaMan struct {
 	db      *models.GachaDB
-	webView *webview.WebView
-}
-
-func NewGachaMan(webview *webview.WebView) *GachaMan {
-	return &GachaMan{
-		db:      &models.GachaDB{},
-		webView: webview,
-	}
+	WebView *webview.WebView
 }
 
 func (g *GachaMan) GetNumWithLast(uid, gachaType, id string) int {
 	result, err := g.db.GetNumWithLast(uid, gachaType, id)
 	if err != nil {
-		g.webView.Alert.Error("从数据库获取计数时出现错误:" + err.Error())
+		g.WebView.Alert.Error("从数据库获取计数时出现错误:" + err.Error())
 		return result
 	}
 	return result
@@ -48,7 +41,7 @@ func (g *GachaMan) GetNumWithLast(uid, gachaType, id string) int {
 func (g *GachaMan) GetLogs(uid, gachaType string, num, page int) []models.GachaLog {
 	result, err := g.db.GetLogs(uid, gachaType, num, page)
 	if err != nil {
-		g.webView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
+		g.WebView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
 		return make([]models.GachaLog, 0)
 	}
 	return result
@@ -59,12 +52,12 @@ func (g *GachaMan) GetPieDatas(uid string) GachaPieDate {
 	result := GachaPieDate{}
 	r, err := g.db.GetTotals(uid)
 	if err != nil {
-		g.webView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
+		g.WebView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
 		return result
 	}
 	c, err := g.db.GetUsedCost(uid)
 	if err != nil {
-		g.webView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
+		g.WebView.Alert.Error("从数据库获取记录时出现错误:" + err.Error())
 		return result
 	}
 	result.UsedCosts = c
@@ -77,7 +70,7 @@ func (g *GachaMan) GetPieDatas(uid string) GachaPieDate {
 func (g *GachaMan) GetUids() []string {
 	result, err := g.db.GetUids()
 	if err != nil {
-		g.webView.Alert.Error("无法从数据库获取 uid:" + err.Error())
+		g.WebView.Alert.Error("无法从数据库获取 uid:" + err.Error())
 	}
 	return result
 }
