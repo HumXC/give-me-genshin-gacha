@@ -91,7 +91,11 @@ func (p *ProxyServer) Start(targetURL string) (string, error) {
 	}
 	if !p.isRunning {
 		go func() {
+			p.isRunning = true
 			p.err <- p.proxy.Start()
+			if p.err != nil {
+				p.isRunning = false
+			}
 		}()
 	}
 	info, err := GetSystemProxyInfo()
@@ -108,7 +112,7 @@ func (p *ProxyServer) Start(targetURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p.isRunning = true
+	p.isStarted = true
 	defer p.Stop()
 	select {
 	case savedURL := <-p.finder.SavedURL:
