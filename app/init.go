@@ -4,7 +4,6 @@ package app
 import (
 	"context"
 	"give-me-genshin-gacha/config"
-	"give-me-genshin-gacha/models"
 	"give-me-genshin-gacha/webview"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -15,6 +14,7 @@ type App struct {
 	config   *config.Config
 	webView  *webview.WebView
 	GachaMan *GachaMan
+	SyncMan  *SyncMan
 	UserMan  *UserMan
 }
 
@@ -30,19 +30,16 @@ func (a *App) PutConfig(cfg config.Config) {
 
 func NewApp() *App {
 	return &App{
-		GachaMan: &GachaMan{
-			db: &models.GachaDB{},
-		},
-		UserMan: &UserMan{
-			db: &models.UserDB{},
-		},
+		GachaMan: &GachaMan{},
+		SyncMan:  &SyncMan{},
+		UserMan:  &UserMan{},
 	}
 }
 
 func Startup(app *App) func(ctx context.Context) {
 	return func(ctx context.Context) {
 		app.webView = webview.NewWebView(ctx)
-		app.GachaMan.WebView = app.webView
+		app.GachaMan.webView = app.webView
 	}
 }
 

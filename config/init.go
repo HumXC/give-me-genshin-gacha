@@ -23,6 +23,7 @@ type Config struct {
 	Language    string    `json:"language"`
 	SelectedUid string    `json:"selectedUid"`
 	ShowGacha   ShowGacha `json:"showGacha"`
+	GameDir     string    `json:"game_dir"`
 	IsDarkTheme bool      `json:"isDarkTheme"`
 	IsAutoSync  bool      `json:"isAutoSync"`
 	IsUseProxy  bool      `json:"isUseProxy"`

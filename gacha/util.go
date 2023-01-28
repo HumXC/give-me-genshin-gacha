@@ -3,7 +3,6 @@ package gacha
 import (
 	"bufio"
 	"fmt"
-	"give-me-genshin-gacha/models"
 	"os"
 	"path"
 	"strings"
@@ -47,7 +46,7 @@ func GetGameDir() (string, error) {
 		i := strings.LastIndex(line, searchName)
 		return line[12 : i+len(searchName)], nil
 	}
-	return "", fmt.Errorf("没有找到游戏目录, 进入游戏后再尝试")
+	return "", fmt.Errorf("在日志中找不到游戏目录")
 }
 
 // 从游戏目录中的网络缓存获取旅行者祈愿的 URL
@@ -116,19 +115,5 @@ func GetWebCacha(gameDataDir string) (*[]byte, error) {
 			return nil, err
 		}
 		result = append(result, b[:n]...)
-	}
-}
-
-// 将爬虫的数据转换成数据库的数据
-func ConvertToDBItem(i RespDataListItem, uid string) models.GachaLog {
-	return models.GachaLog{
-		GachaType: i.GachaType,
-		Time:      i.Time,
-		Name:      i.Name,
-		Lang:      i.Lang,
-		ItemType:  i.ItemType,
-		RankType:  i.RankType,
-		ID:        i.ID,
-		Uid:       uid,
 	}
 }

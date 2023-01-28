@@ -61,12 +61,12 @@ func (f *Fetcher) Uid() string {
 }
 
 // 进行一次请求, 测试 URL 是否可用
-func (f *Fetcher) test() error {
+func Test(rawURL string) error {
 	type response struct {
 		Message string `json:"message"`
 	}
 	resp := response{}
-	url := f.rawURL.String()
+	url := rawURL
 	r, err := http.Get(url)
 	if err != nil {
 		return err
@@ -165,5 +165,5 @@ func NewFetcher(rawURL string) (*Fetcher, error) {
 		uid:    "",
 		rawURL: u,
 	}
-	return f, f.test()
+	return f, Test(rawURL)
 }

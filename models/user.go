@@ -8,45 +8,26 @@ import (
 
 type User struct {
 	gorm.Model
-	Uid      string
 	RawURL   string
 	SyncTime time.Time
 }
 
-type UserDB struct {
-	uids []string
-}
-
-func (u *UserDB) hasUid(uid string) (bool, error) {
-	_uid := ""
-	tx := db.Table("users").Select("uid").Where("uid=?", uid).First(&_uid)
-	return _uid == uid, tx.Error
-}
+type UserDB struct{}
 
 // 此函数表示某个用户已经进行了一次同步操作
-func (u *UserDB) Sync(uid, rawURL string) error {
+func (u *UserDB) Sync(id uint, rawURL string) error {
 	user := User{
-		Uid:      uid,
+		Model: gorm.Model{
+			ID: id,
+		},
 		RawURL:   rawURL,
 		SyncTime: time.Now(),
 	}
-	hasUid, err := u.hasUid(uid)
-	if err != nil {
-		return err
-	}
-	if !hasUid {
-		tx := db.Table("users").Create(&user)
-		if tx.Error == nil {
-			u.uids = append(u.uids, uid)
-		}
-		return tx.Error
-	}
-	tx := db.Table("users").Omit("uid").Where("uid=?", uid).Updates(&user)
-	return tx.Error
+	return db.Model(&User{}).Save(&user).Error
 }
 
 func (u *UserDB) Get() ([]User, error) {
 	users := make([]User, 4)
-	tx := db.Table("users").Find(&users)
+	tx := db.Model(&User{}).Find(&users)
 	return users, tx.Error
 }

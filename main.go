@@ -30,6 +30,8 @@ func main() {
 		Bind: []interface{}{
 			a,
 			a.GachaMan,
+			a.SyncMan,
+			a.UserMan,
 		},
 	},
 	)
