@@ -26,11 +26,9 @@ onMounted(async () => {
             <button class="button-settings" @click="routeTo('/settings')">Settings</button>
         </div>
         <!-- 右边展示页 -->
-        <div style="width: 100%; height: 100%; margin: 0">
-            <el-scrollbar :view-style="['height:100%']">
-                <div id="view">
-                    <router-view></router-view>
-                </div>
+        <div style="flex: 1">
+            <el-scrollbar :wrap-class="'scrollbar-wrap'" :view-style="['width:100%']">
+                <router-view></router-view>
             </el-scrollbar>
         </div>
     </div>
@@ -56,9 +54,21 @@ onMounted(async () => {
     flex-wrap: wrap;
     flex-flow: column;
 }
-#view {
-    margin: 0;
-    height: 100%;
-    overflow-x: hidden;
+</style>
+<style>
+.scrollbar-wrap {
+    /* height: calc(100% - 45px); */
+    height: calc(100% - 45px);
+    width: calc(100% - 45px);
+    margin-top: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    border-radius: 8px;
+    padding: 12px 12px 12px 12px;
+    color: var(--el-text-color-primary);
+    background-color: var(--el-bg-color-page);
 }
 </style>

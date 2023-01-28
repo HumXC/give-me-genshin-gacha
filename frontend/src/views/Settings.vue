@@ -20,7 +20,7 @@ onMounted(async () => {
 </script>
 <template>
     <div class="box">
-        <span class="title">全局</span>
+        <span class="title-top">全局</span>
         <SwitchItem class="item" @change="(val) => toggleTheme(val)" v-model="conf.isDarkTheme">
             深色模式</SwitchItem
         >
@@ -38,6 +38,12 @@ onMounted(async () => {
 <style scoped>
 .item {
     margin-top: 6px;
+    margin-bottom: 4px;
+}
+.title-top {
+    font-size: 14px;
+    margin-right: auto;
+    color: var(--el-text-color-regular);
 }
 .title {
     margin-top: 16px;
@@ -46,16 +52,7 @@ onMounted(async () => {
     color: var(--el-text-color-regular);
 }
 .box {
-    height: calc(100% - 60px);
-    margin-top: 10px;
-    margin-left: 10px;
-    margin-right: 10px;
     display: flex;
     flex-flow: column;
-    align-items: center;
-    border-radius: 8px;
-    padding: 12px 12px 12px 12px;
-    color: var(--el-text-color-primary);
-    background-color: var(--el-bg-color-page);
 }
 </style>
