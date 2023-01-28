@@ -29,17 +29,22 @@ func (a *App) PutConfig(cfg config.Config) {
 }
 
 func NewApp() *App {
+	cfg, err := config.Get("./config.json")
+	if err != nil {
+		panic(err)
+	}
 	return &App{
+		config:   cfg,
 		GachaMan: &GachaMan{},
 		SyncMan:  &SyncMan{},
 		UserMan:  &UserMan{},
 	}
 }
 
-func Startup(app *App) func(ctx context.Context) {
+func Startup(a *App) func(ctx context.Context) {
 	return func(ctx context.Context) {
-		app.webView = webview.NewWebView(ctx)
-		app.GachaMan.webView = app.webView
+		a.webView = webview.NewWebView(ctx)
+		a.GachaMan.webView = a.webView
 	}
 }
 

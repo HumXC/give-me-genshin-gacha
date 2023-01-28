@@ -3,7 +3,6 @@
  -->
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
-import { models } from "../../wailsjs/go/models";
 import rank3bg from "../assets/images/rank3.png";
 import rank4bg from "../assets/images/rank4.png";
 import rank5bg from "../assets/images/rank5.png";
@@ -47,7 +46,7 @@ const itemColors = {
         bg: "#5ba8d6",
     },
 };
-const props = defineProps<{ uid: string; gachaLog: models.GachaLog }>();
+const props = defineProps<{ uid: string; gachaLog: any }>();
 const data = ref({
     // 距离上一次同等品质的物品出货所花费的次数
     usedCost: 0,
