@@ -2,9 +2,11 @@ package gacha
 
 // 提供系统代理相关的功能
 import (
+	"context"
 	"errors"
 	"net"
 	"strings"
+	"sync"
 
 	"github.com/Trisia/gosysproxy"
 	"github.com/lqqyt2423/go-mitmproxy/proxy"
@@ -69,34 +71,27 @@ func GetSystemProxyInfo() (result systemProxyInfo, e error) {
 type ProxyServer struct {
 	proxy     *proxy.Proxy
 	err       chan error
+	cancel    context.CancelFunc
 	finder    *urlFinder
-	isRunning bool // proxy 的运行状态
 	isStarted bool // 是否有正在获取 URL 的任务
 	isClosed  bool
 	info      systemProxyInfo
+	mu        sync.Mutex
 }
 
 // 开启代理服务器并尝试捕获 URL
 // targetURL 是希望匹配的 URL 列表
 // 代理服务器会以 strings.HasPrefix(url, targetURL) 的方式匹配 URL
-// 获取到 URL 后自动调用 Stop() , 因为代理服务器无法响应祈愿页面的 https 请求
+// 获取到 URL 后自动调用 Stop(), 因为代理服务器无法响应祈愿页面的 https 请求
 // 感觉就像是断网了, 但是只要获取到了链接, 那么目的就达到了
 // 在调用 Close() 之前, Start() 可以多次调用
+// 如果在其他协程中调用了 Stop() 或 Close(), 将返回空字符串和 nil
 func (p *ProxyServer) Start(targetURL string) (string, error) {
 	if p.isStarted {
 		return "", errors.New("代理服务器正在进行任务")
 	}
 	if p.isClosed {
 		return "", errors.New("代理服务器已被销毁，需要重新创建")
-	}
-	if !p.isRunning {
-		go func() {
-			p.isRunning = true
-			p.err <- p.proxy.Start()
-			if p.err != nil {
-				p.isRunning = false
-			}
-		}()
 	}
 	info, err := GetSystemProxyInfo()
 	if err != nil {
@@ -114,11 +109,12 @@ func (p *ProxyServer) Start(targetURL string) (string, error) {
 	}
 	p.isStarted = true
 	defer p.Stop()
+	p.finder.SavedURL = make(chan string)
 	select {
-	case savedURL := <-p.finder.SavedURL:
-		return savedURL, nil
 	case err := <-p.err:
 		return "", err
+	case savedURL := <-p.finder.SavedURL:
+		return savedURL, nil
 	}
 }
 
@@ -141,28 +137,32 @@ func (p *ProxyServer) Stop() error {
 			return err
 		}
 	}
+	close(p.finder.SavedURL)
 	p.isStarted = false
 	return nil
 }
 
-// 关闭代理服务器并且
+// 关闭代理服务器
 func (p *ProxyServer) Close() (err error) {
+	// 上锁确保 isClosed 的值在各个协程中同步
+	p.mu.Lock()
+	if p.isClosed {
+		return nil
+	}
 	if p.isStarted {
 		err = p.Stop()
 		if err != nil {
 			return
 		}
-
 	}
-	if p.isRunning {
-		err = p.proxy.Close()
-		if err != nil {
-			return err
-		}
+	p.cancel()
+	err = p.proxy.Close()
+	if err != nil {
+		p.isClosed = true
+		return
 	}
-	close(p.err)
-	close(p.finder.SavedURL)
 	p.isClosed = true
+	p.mu.Unlock()
 	return
 }
 
@@ -181,15 +181,26 @@ func NewProxyServer() (*ProxyServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	addon := &urlFinder{
-		SavedURL:  make(chan string),
-		TargetURL: "",
-	}
+	addon := &urlFinder{}
 	pro.AddAddon(addon)
 	p := &ProxyServer{
 		proxy:  pro,
 		finder: addon,
+		err:    make(chan error, 1),
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	p.cancel = cancel
+	go func() {
+		select {
+		case <-ctx.Done():
+			close(p.err)
+		// TODO: 测试此处是否存在协程泄露
+		case p.err <- p.proxy.Start():
+			if p.err != nil {
+				p.cancel = nil
+			}
+		}
+	}()
 	return p, nil
 }
 
