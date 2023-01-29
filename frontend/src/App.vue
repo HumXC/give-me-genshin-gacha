@@ -27,8 +27,15 @@ onMounted(async () => {
         </div>
         <!-- 右边展示页 -->
         <div style="flex: 1">
-            <el-scrollbar :wrap-class="'scrollbar-wrap'" :view-style="['width:100%']">
-                <router-view></router-view>
+            <el-scrollbar
+                :wrap-class="'scrollbar-wrap'"
+                :view-style="['width:100%', 'height:100%', 'display:flex', 'flex-flow:column']"
+            >
+                <router-view v-slot="{ Component }">
+                    <keep-alive>
+                        <component :is="Component" />
+                    </keep-alive>
+                </router-view>
             </el-scrollbar>
         </div>
     </div>

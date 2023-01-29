@@ -17,11 +17,9 @@ func main() {
 	a := app.NewApp()
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:     "give-me-genshin-gacha",
-		Width:     388,
-		Height:    518,
-		MinWidth:  388,
-		MinHeight: 518,
+		Title:  "give-me-genshin-gacha",
+		Width:  740,
+		Height: 530,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
