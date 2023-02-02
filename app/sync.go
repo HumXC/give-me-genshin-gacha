@@ -1,10 +1,15 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"give-me-genshin-gacha/config"
 	"give-me-genshin-gacha/gacha"
+	"give-me-genshin-gacha/models"
 	"give-me-genshin-gacha/webview"
+	"strconv"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type SyncMsg struct {
@@ -15,22 +20,20 @@ type SyncMsg struct {
 
 // 提供同步祈愿数据的功能
 type SyncMan struct {
+	ctx     context.Context
 	proxy   *gacha.ProxyServer
 	config  *config.Config
 	webview *webview.WebView
+	logDB   *models.LogDB
+	userDB  *models.UserDB
 }
 
-// 同步有两种情况
-// 1、从数据库里的 users 表获取已知的 rawURL 进行同步，同步失败就清除对应的 rawURL
-// 2、从游戏目录或者代理服务器中获取 rawURL, 然后获取到 UID, 存入 users 表
-// 分成两个动作, 获取rawURL 和 同步数据
-
-func (s *SyncMan) Sync(rawUrl string) uint {
+func (s *SyncMan) Sync(rawUrl string) uint64 {
 	f, err := gacha.NewFetcher(rawUrl)
 	if err != nil {
 		// 测试失败返回空，但是此错误不需要在前端报告
 		if errors.Is(err, gacha.ErrUrlTestFailed) {
-			s.webview.Alert.Warning("旧链接已经失效，尝试重新获取")
+			s.webview.Alert.Warning("爬虫创建失败: " + err.Error())
 			return 0
 		}
 		if err != nil {
@@ -38,7 +41,50 @@ func (s *SyncMan) Sync(rawUrl string) uint {
 			return 0
 		}
 	}
-	// TODO
+	gachaTypes := []string{
+		"301", "302", "200", "100",
+	}
+	endIDs, err := s.logDB.EndLogIDs()
+	if err != nil {
+		s.webview.Alert.Error("获取 EndLogID 失败: " + err.Error())
+		return 0
+	}
+	result := make([]models.GachaLog, 0)
+
+	for _, gachaType := range gachaTypes {
+		g := f.Get(gachaType, endIDs[gachaType])
+		page := 0
+		var err error
+		for {
+			page++
+			runtime.LogInfo(s.ctx, "正在获取["+gachaType+"]第 "+strconv.Itoa(page)+" 页")
+			err = nil
+			resp, e := g()
+			logs := gacha.ConverToDBLog(resp)
+			// 保证较新的记录在数组结尾
+			for i, j := 0, len(logs)-1; i < j; i, j = i+1, j-1 {
+				logs[i], logs[j] = logs[j], logs[i]
+			}
+			result = append(logs, result...)
+			if e != nil {
+				err = e
+				break
+			}
+
+		}
+		if !errors.Is(err, gacha.ErrPageEnd) {
+			s.webview.Alert.Error("获取祈愿记录失败: " + err.Error())
+		} else {
+			runtime.LogInfo(s.ctx, "已经是最后一页了")
+		}
+	}
+	runtime.LogInfo(s.ctx, "将祈愿记录写入数据库")
+	err = s.logDB.Add(result)
+	if err != nil {
+		s.webview.Alert.Error("祈愿记录写入数据库失败: " + err.Error())
+		return 0
+	}
+
 	return f.Uid()
 }
 
@@ -58,7 +104,7 @@ func (s *SyncMan) GetRawURL(isUseProxy bool) string {
 	}
 	rawURL, err := gacha.GetRawURL(s.config.GameDir)
 	if err != nil {
-		s.webview.Alert.Error(err.Error())
+		s.webview.Alert.Error("无法获取祈愿链接: " + err.Error())
 		return ""
 	}
 	return rawURL

@@ -7,7 +7,7 @@ import { models } from "../../wailsjs/go/models";
 
 const isUseProxy = ref(false);
 const users = ref(new Array<models.User>());
-const selectedUid = ref("选择你的 uid");
+const selectedUid = ref("");
 let SelectedUser: models.User;
 async function init() {
     let config = await GetConfig();
@@ -51,22 +51,45 @@ function maskUid(uid: string): string {
 }
 
 async function startSync() {
-    if (SelectedUser === undefined) {
-        return;
-    }
-    if (SelectedUser.raw_url !== "") {
-        let result = await sync.Sync(SelectedUser.raw_url);
-        if (result !== 0) {
-            user.Sync(result, SelectedUser.raw_url);
+    if (users.value.length !== 0) {
+        if (SelectedUser === undefined) {
             return;
         }
-        // result===0 说明链接不可用了
-        user.Sync(SelectedUser.id, "");
-
-        // TODO 错误处理
+        // 如果有已经之前同步的链接，则先使用之前的链接同步
+        if (SelectedUser.raw_url !== "") {
+            let result = await sync.Sync(SelectedUser.raw_url);
+            if (result !== 0) {
+                user.Sync(result, SelectedUser.raw_url);
+                return;
+            }
+            // result===0 说明链接不可用了
+            user.Sync(SelectedUser.id, "");
+        }
     }
-    let url = await sync.GetRawURL(false);
-    // TODO: 同步行为
+
+    // 获取新的链接
+    let url = await sync.GetRawURL(isUseProxy.value);
+    if (url === "") {
+        return;
+    }
+    let result = await sync.Sync(url);
+    if (result === 0) {
+        return;
+    }
+    let ok = await user.Sync(result, url);
+    if (!ok) {
+        return;
+    }
+    // 更新选择的 uid
+    users.value = await user.Get();
+    for (let i = 0; i < users.value.length; i++) {
+        const user = users.value[i];
+        if (user.id === result) {
+            changeUser(user);
+            selectedUid.value = maskUid(result.toString());
+            return;
+        }
+    }
 }
 onMounted(() => {
     init();
@@ -85,7 +108,7 @@ onMounted(() => {
         <div class="right">
             <div style="height: 50px"></div>
             <el-select
-                placeholder="Select"
+                placeholder="选择你的 uid"
                 value-key="id"
                 v-model="selectedUid"
                 @change="changeUser"

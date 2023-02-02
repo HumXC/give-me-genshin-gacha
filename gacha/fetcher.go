@@ -35,6 +35,7 @@ type RespDataListItem struct {
 	ItemType  string `json:"item_type"`
 	RankType  string `json:"rank_type"`
 	ID        string `json:"id"`
+	Count     string `json:"count"`
 }
 
 type RespData struct {
@@ -50,13 +51,13 @@ type Response struct {
 	Region  string   `json:"region"`
 }
 type Fetcher struct {
-	uid    uint
+	uid    uint64
 	lock   sync.Mutex
 	rawURL *url.URL
 }
 
 // 获取此祈愿链接的 Uid
-func (f *Fetcher) Uid() uint {
+func (f *Fetcher) Uid() uint64 {
 	return f.uid
 }
 
@@ -87,8 +88,8 @@ func Test(rawURL string) error {
 
 // 返回一个用于获取祈愿数据的闭包
 // 如果没有下一页了, 则返回 ErrPageEnd 错误
-func (f *Fetcher) Get(gachaType, endID string) func() ([]RespDataListItem, error) {
-	page := 1
+// endID 是上一次同步所获取的最后一个物品的 id
+func (f *Fetcher) Get(gachaType string, endIDs map[uint64]uint64) func() ([]RespDataListItem, error) {
 	isEnd := false
 	// end 用于翻页
 	end := "0"
@@ -96,20 +97,23 @@ func (f *Fetcher) Get(gachaType, endID string) func() ([]RespDataListItem, error
 		if isEnd {
 			return []RespDataListItem{}, ErrPageEnd
 		}
-		result, err := f.fetch(gachaType, end, page)
+		result, err := f.fetch(gachaType, end)
 		if err != nil {
 			return result, err
 		}
-		page++
 		length := len(result)
+		if length == 0 {
+			return result, ErrPageEnd
+		}
 		end = result[length-1].ID
 		// 筛选出更新的物品
 		for i, item := range result {
 			if f.uid == 0 {
-				i, _ := strconv.Atoi(item.Uid)
-				f.uid = uint(i)
+				i, _ := strconv.ParseUint(item.Uid, 10, 64)
+				f.uid = i
 			}
-			if item.ID == endID {
+			// FIXME 如果连续同步两次，第二次同步的第一页的最后一条 endID
+			if item.ID == strconv.FormatUint(endIDs[f.uid], 10) {
 				isEnd = true
 				return result[:i], ErrPageEnd
 			}
@@ -120,14 +124,13 @@ func (f *Fetcher) Get(gachaType, endID string) func() ([]RespDataListItem, error
 
 // 获取指定祈愿的所有记录，gachaType 是数字代号的字符串
 // page 的值从 1 开始
-func (f *Fetcher) fetch(gachaType, endID string, page int) ([]RespDataListItem, error) {
-	result := make([]RespDataListItem, 20)
+func (f *Fetcher) fetch(gachaType, endID string) ([]RespDataListItem, error) {
+	result := make([]RespDataListItem, 0)
 	f.lock.Lock()
 	url := f.rawURL
 	query := url.Query()
 	query.Set("gacha_type", gachaType)
 	query.Set("end_id", endID)
-	query.Set("page", strconv.Itoa(page))
 	url.RawQuery = query.Encode()
 	url_ := url.String()
 	resp, err := http.Get(url_)
@@ -161,6 +164,8 @@ func NewFetcher(rawURL string) (*Fetcher, error) {
 	}
 	query := u.Query()
 	query.Set("size", "20")
+	query.Set("page", "1")
+	query.Set("begin_id", "0")
 	u.RawQuery = query.Encode()
 	f := &Fetcher{
 		rawURL: u,

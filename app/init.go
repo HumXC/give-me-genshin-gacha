@@ -34,6 +34,8 @@ func NewApp(config *config.Config, db *models.DB) *App {
 		UserMan: &UserMan{db: db.User},
 		SyncMan: &SyncMan{
 			config: config,
+			logDB:  db.Log,
+			userDB: db.User,
 		},
 	}
 	return app
@@ -41,9 +43,12 @@ func NewApp(config *config.Config, db *models.DB) *App {
 
 func Startup(a *App) func(ctx context.Context) {
 	return func(ctx context.Context) {
+		a.ctx = ctx
 		webview := webview.NewWebView(ctx)
 		a.webView = webview
+		a.UserMan.webview = webview
 		a.SyncMan.webview = webview
+		a.SyncMan.ctx = ctx
 	}
 }
 
