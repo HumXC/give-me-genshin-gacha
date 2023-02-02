@@ -15,7 +15,7 @@ const Api = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
 func GetGameDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("获取用户失败目录: %w", err)
+		return "", fmt.Errorf("获取用户目录失败: %w", err)
 	}
 	// 读取原神日志文件
 	logFileName := path.Join(homeDir, "AppData", "LocalLow", "miHoYo", "原神", "output_log.txt")
@@ -36,15 +36,16 @@ func GetGameDir() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("日志解析错误: %w", err)
 		}
-		if !strings.Contains(line, "Warmup file") {
+		flag := "Warmup file "
+		if !strings.Contains(line, flag) {
 			continue
 		}
 		if !strings.Contains(line, searchName) {
 			continue
 		}
-
-		i := strings.LastIndex(line, searchName)
-		return line[12 : i+len(searchName)], nil
+		start := strings.LastIndex(line, flag)
+		end := strings.LastIndex(line, searchName)
+		return line[start+len(flag) : end+len(searchName)], nil
 	}
 	return "", fmt.Errorf("在日志中找不到游戏目录")
 }
