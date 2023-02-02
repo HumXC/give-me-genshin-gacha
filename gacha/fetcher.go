@@ -50,13 +50,13 @@ type Response struct {
 	Region  string   `json:"region"`
 }
 type Fetcher struct {
-	uid    string
+	uid    uint
 	lock   sync.Mutex
 	rawURL *url.URL
 }
 
 // 获取此祈愿链接的 Uid
-func (f *Fetcher) Uid() string {
+func (f *Fetcher) Uid() uint {
 	return f.uid
 }
 
@@ -80,7 +80,7 @@ func Test(rawURL string) error {
 		return err
 	}
 	if resp.Message != "OK" {
-		return fmt.Errorf(url+" - "+resp.Message, ErrUrlTestFailed)
+		return fmt.Errorf("%w: "+resp.Message, ErrUrlTestFailed)
 	}
 	return nil
 }
@@ -105,8 +105,9 @@ func (f *Fetcher) Get(gachaType, endID string) func() ([]RespDataListItem, error
 		end = result[length-1].ID
 		// 筛选出更新的物品
 		for i, item := range result {
-			if f.uid == "" {
-				f.uid = item.Uid
+			if f.uid == 0 {
+				i, _ := strconv.Atoi(item.Uid)
+				f.uid = uint(i)
 			}
 			if item.ID == endID {
 				isEnd = true
@@ -162,7 +163,6 @@ func NewFetcher(rawURL string) (*Fetcher, error) {
 	query.Set("size", "20")
 	u.RawQuery = query.Encode()
 	f := &Fetcher{
-		uid:    "",
 		rawURL: u,
 	}
 	return f, Test(rawURL)

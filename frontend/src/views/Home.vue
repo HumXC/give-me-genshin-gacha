@@ -1,6 +1,76 @@
 <script lang="ts" setup>
-import { ref } from "vue";
-const value = ref(false);
+import { onMounted, ref } from "vue";
+import { GetConfig, PutConfig } from "../../wailsjs/go/app/App";
+import * as sync from "../../wailsjs/go/app/SyncMan";
+import * as user from "../../wailsjs/go/app/UserMan";
+import { models } from "../../wailsjs/go/models";
+
+const isUseProxy = ref(false);
+const users = ref(new Array<models.User>());
+const selectedUid = ref("选择你的 uid");
+let SelectedUser: models.User;
+async function init() {
+    let config = await GetConfig();
+    users.value = await user.Get();
+    if (config.selectedUid !== 0) {
+        // 如果用户列表是空的，或者找不到这个用户，就清空 config.selectedUid
+        // 否则就选中这个用户
+        if (users.value.length !== 0) {
+            let u: undefined | models.User = undefined;
+            for (let i = 0; i < users.value.length; i++) {
+                const user = users.value[i];
+                if (user.id === config.selectedUid) {
+                    u = user;
+                    break;
+                }
+            }
+            if (u !== undefined) {
+                SelectedUser = u;
+                selectedUid.value = maskUid(u.id.toString());
+            } else {
+                config.selectedUid === 0;
+                PutConfig(config);
+            }
+            return;
+        }
+        config.selectedUid === 0;
+        PutConfig(config);
+    }
+}
+
+async function changeUser(user: models.User) {
+    SelectedUser = user;
+    let config = await GetConfig();
+    config.selectedUid = SelectedUser.id;
+    PutConfig(config);
+}
+
+function maskUid(uid: string): string {
+    let reg = /(\d{3})\d{3}(\d{3})/;
+    return uid.replace(reg, "$1****$2");
+}
+
+async function startSync() {
+    if (SelectedUser === undefined) {
+        return;
+    }
+    if (SelectedUser.raw_url !== "") {
+        let result = await sync.Sync(SelectedUser.raw_url);
+        if (result !== 0) {
+            user.Sync(result, SelectedUser.raw_url);
+            return;
+        }
+        // result===0 说明链接不可用了
+        user.Sync(SelectedUser.id, "");
+
+        // TODO 错误处理
+    }
+    let url = await sync.GetRawURL(false);
+    // TODO: 同步行为
+}
+onMounted(() => {
+    init();
+});
 </script>
 <template>
     <h1 style="height: 100px">Hi !</h1>
@@ -14,19 +84,34 @@ const value = ref(false);
         </div>
         <div class="right">
             <div style="height: 50px"></div>
-            <el-select> </el-select>
+            <el-select
+                placeholder="Select"
+                value-key="id"
+                v-model="selectedUid"
+                @change="changeUser"
+            >
+                <el-option
+                    v-for="user in users"
+                    :key="user.id"
+                    :label="maskUid(user.id.toString())"
+                    :value="user"
+                >
+                </el-option>
+            </el-select>
             <div style="height: 50px"></div>
             <div class="sync">
-                <el-button circle class="sync-button" type="primary">尝试同步</el-button>
+                <el-button circle class="sync-button" type="primary" @click="startSync"
+                    >尝试同步</el-button
+                >
                 <el-switch
-                    v-model="value"
+                    v-model="isUseProxy"
+                    class="sync-type"
+                    active-text="从网络代理"
+                    inactive-text="从游戏缓存"
                     style="
                         --el-switch-on-color: var(--el-color-success);
                         --el-switch-off-color: var(--el-color-success);
                     "
-                    class="sync-type"
-                    active-text="从网络代理"
-                    inactive-text="从游戏缓存"
                 />
             </div>
         </div>

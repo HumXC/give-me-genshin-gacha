@@ -13,8 +13,13 @@ const conf = ref(
 onMounted(async () => {
     let c = await GetConfig();
     copyObjTo(c, conf.value);
-    watch(conf.value, () => {
-        PutConfig(conf.value);
+    watch(conf.value, async () => {
+        let config = await GetConfig();
+        config.isAutoSync = conf.value.isAutoSync;
+        config.isDarkTheme = conf.value.isDarkTheme;
+        config.showGacha = conf.value.showGacha;
+        config.language = conf.value.language;
+        PutConfig(config);
     });
 });
 </script>

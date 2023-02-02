@@ -26,7 +26,11 @@ func (u *UserDB) Sync(id uint, rawURL string) error {
 		RawURL:   rawURL,
 		SyncTime: time.Now(),
 	}
-	return u.db.Model(&User{}).Save(&user).Error
+	// 如果 rawURL=="" 说明原来存在数据库里的链接已经失效，则不更新 SyncTime
+	if rawURL == "" {
+		return u.db.Model(&User{}).Omit("sync_time", "created_at").Where("id = ?", id).Save(&user).Error
+	}
+	return u.db.Model(&User{}).Omit("created_at").Where("id = ?", id).Save(&user).Error
 }
 
 func (u *UserDB) Get() ([]User, error) {

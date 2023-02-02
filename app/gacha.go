@@ -6,6 +6,6 @@ import (
 )
 
 type GachaMan struct {
-	db      models.GachaDB
+	db      models.LogDB
 	webView *webview.WebView
 }
