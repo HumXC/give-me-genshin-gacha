@@ -7,27 +7,30 @@ import (
 )
 
 type User struct {
-	gorm.Model
-	RawURL   string
-	SyncTime time.Time
+	ID        uint `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+	RawURL    string         `json:"raw_url"`
+	SyncTime  time.Time      `json:"sync_time"`
 }
 
-type UserDB struct{}
+type UserDB struct {
+	db *gorm.DB
+}
 
 // 此函数表示某个用户已经进行了一次同步操作
 func (u *UserDB) Sync(id uint, rawURL string) error {
 	user := User{
-		Model: gorm.Model{
-			ID: id,
-		},
+		ID:       id,
 		RawURL:   rawURL,
 		SyncTime: time.Now(),
 	}
-	return db.Model(&User{}).Save(&user).Error
+	return u.db.Model(&User{}).Save(&user).Error
 }
 
 func (u *UserDB) Get() ([]User, error) {
-	users := make([]User, 4)
-	tx := db.Model(&User{}).Find(&users)
+	users := make([]User, 0)
+	tx := u.db.Model(&User{}).Find(&users)
 	return users, tx.Error
 }

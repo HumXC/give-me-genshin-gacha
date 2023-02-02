@@ -23,3 +23,21 @@ func (m *Alert) Error(msg string) {
 		Msg:  msg,
 	})
 }
+func (m *Alert) Success(msg string) {
+	m.Send(Message{
+		Type: "success",
+		Msg:  msg,
+	})
+}
+func (m *Alert) Info(msg string) {
+	m.Send(Message{
+		Type: "info",
+		Msg:  msg,
+	})
+}
+func (m *Alert) Warning(msg string) {
+	m.Send(Message{
+		Type: "warning",
+		Msg:  msg,
+	})
+}

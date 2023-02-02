@@ -23,11 +23,13 @@ type GachaTotal struct {
 	ItemType string `json:"itemType"`
 	RankType string `json:"rankType"`
 }
-type GachaDB struct{}
+type LogDB struct {
+	db *gorm.DB
+}
 
 // 添加条目到数据库
-func (d *GachaDB) Add(items []GachaLog) error {
-	return db.Create(items).Error
+func (d *LogDB) Add(items []GachaLog) error {
+	return d.db.Create(items).Error
 }
 func fixGachaType(query *gorm.DB, gachaType string) *gorm.DB {
 	if gachaType == "301" {
