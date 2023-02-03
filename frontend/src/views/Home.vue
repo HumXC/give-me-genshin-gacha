@@ -1,16 +1,24 @@
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import { ElMessage, ElNotification } from "element-plus";
+import { onMounted, ref, watch } from "vue";
 import { GetConfig, PutConfig } from "../../wailsjs/go/app/App";
 import * as sync from "../../wailsjs/go/app/SyncMan";
 import * as user from "../../wailsjs/go/app/UserMan";
 import { models } from "../../wailsjs/go/models";
 
+const isLoading = ref(false);
 const isUseProxy = ref(false);
 const users = ref(new Array<models.User>());
 const selectedUid = ref("");
 let SelectedUser: models.User;
 async function init() {
     let config = await GetConfig();
+    isUseProxy.value = config.isUseProxy;
+    watch(isUseProxy, async (v) => {
+        let c = await GetConfig();
+        c.isUseProxy = v;
+        PutConfig(c);
+    });
     users.value = await user.Get();
     if (config.selectedUid !== 0) {
         // 如果用户列表是空的，或者找不到这个用户，就清空 config.selectedUid
@@ -29,13 +37,20 @@ async function init() {
                 selectedUid.value = maskUid(u.id.toString());
             } else {
                 config.selectedUid === 0;
-                PutConfig(config);
             }
             return;
         }
         config.selectedUid === 0;
-        PutConfig(config);
     }
+}
+function CreatProxyNotify(onClose: () => void): () => void {
+    return ElNotification({
+        title: "已经开启代理服务器",
+        message: "重新在游戏里打开祈愿记录，关闭此通知会关闭代理服务器并取消同步",
+        onClose: onClose,
+        duration: 0,
+        offset: 0,
+    }).close;
 }
 
 async function changeUser(user: models.User) {
@@ -51,8 +66,10 @@ function maskUid(uid: string): string {
 }
 
 async function startSync() {
+    isLoading.value = true;
     if (users.value.length !== 0) {
         if (SelectedUser === undefined) {
+            isLoading.value = false;
             return;
         }
         // 如果有已经之前同步的链接，则先使用之前的链接同步
@@ -60,6 +77,11 @@ async function startSync() {
             let result = await sync.Sync(SelectedUser.raw_url);
             if (result !== 0) {
                 user.Sync(result, SelectedUser.raw_url);
+                isLoading.value = false;
+                ElMessage({
+                    type: "success",
+                    message: "同步完成！",
+                });
                 return;
             }
             // result===0 说明链接不可用了
@@ -68,16 +90,26 @@ async function startSync() {
     }
 
     // 获取新的链接
+    let closeNotifytion: (() => void) | null = null;
+    if (isUseProxy.value) {
+        closeNotifytion = CreatProxyNotify(() => {
+            sync.StopProxyServer();
+        });
+    }
     let url = await sync.GetRawURL(isUseProxy.value);
+    if (closeNotifytion !== null) closeNotifytion();
     if (url === "") {
+        isLoading.value = false;
         return;
     }
     let result = await sync.Sync(url);
     if (result === 0) {
+        isLoading.value = false;
         return;
     }
     let ok = await user.Sync(result, url);
     if (!ok) {
+        isLoading.value = false;
         return;
     }
     // 更新选择的 uid
@@ -87,9 +119,15 @@ async function startSync() {
         if (user.id === result) {
             changeUser(user);
             selectedUid.value = maskUid(result.toString());
+            isLoading.value = false;
+            ElMessage({
+                type: "success",
+                message: "同步完成！",
+            });
             return;
         }
     }
+    isLoading.value = false;
 }
 onMounted(() => {
     init();
@@ -123,7 +161,12 @@ onMounted(() => {
             </el-select>
             <div style="height: 50px"></div>
             <div class="sync">
-                <el-button circle class="sync-button" type="primary" @click="startSync"
+                <el-button
+                    circle
+                    :loading="isLoading"
+                    class="sync-button"
+                    type="primary"
+                    @click="startSync"
                     >尝试同步</el-button
                 >
                 <el-switch

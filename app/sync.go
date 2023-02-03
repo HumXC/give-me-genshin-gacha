@@ -87,11 +87,35 @@ func (s *SyncMan) Sync(rawUrl string) uint64 {
 
 	return f.Uid()
 }
-
+func (s *SyncMan) StopProxyServer() bool {
+	if s.proxy == nil {
+		return true
+	}
+	err := s.proxy.Stop()
+	if err != nil {
+		s.webview.Alert.Error("无法关闭代理服务器: " + err.Error())
+	}
+	runtime.LogInfo(s.ctx, "手动动关闭代理服务器")
+	return err == nil
+}
 func (s *SyncMan) GetRawURL(isUseProxy bool) string {
 	if isUseProxy {
-		// TODO
-		return ""
+		if s.proxy == nil {
+			runtime.LogInfo(s.ctx, "创建代理服务器")
+			p, err := gacha.NewProxyServer()
+			if err != nil {
+				s.webview.Alert.Error("无法创建代理服务器: " + err.Error())
+				return ""
+			}
+			s.proxy = p
+		}
+		runtime.LogInfo(s.ctx, "开始从代理服务器获取链接")
+		url, err := s.proxy.Start(gacha.Api)
+		if err != nil {
+			s.webview.Alert.Error("无法启动理服务器: " + err.Error())
+			return ""
+		}
+		return url
 	}
 
 	if s.config.GameDir == "" {
