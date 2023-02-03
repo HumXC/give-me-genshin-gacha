@@ -6,11 +6,12 @@ import * as sync from "../../wailsjs/go/app/SyncMan";
 import * as user from "../../wailsjs/go/app/UserMan";
 import { models } from "../../wailsjs/go/models";
 
+const syncTime = ref("");
 const isLoading = ref(false);
 const isUseProxy = ref(false);
 const users = ref(new Array<models.User>());
+const selectedUserIndex = ref(-1);
 const selectedUid = ref("");
-let SelectedUser: models.User;
 async function init() {
     let config = await GetConfig();
     isUseProxy.value = config.isUseProxy;
@@ -20,24 +21,14 @@ async function init() {
         PutConfig(c);
     });
     users.value = await user.Get();
+
+    // 选中配置里的 selectedUid
     if (config.selectedUid !== 0) {
         // 如果用户列表是空的，或者找不到这个用户，就清空 config.selectedUid
         // 否则就选中这个用户
-        if (users.value.length !== 0) {
-            let u: undefined | models.User = undefined;
-            for (let i = 0; i < users.value.length; i++) {
-                const user = users.value[i];
-                if (user.id === config.selectedUid) {
-                    u = user;
-                    break;
-                }
-            }
-            if (u !== undefined) {
-                SelectedUser = u;
-                selectedUid.value = maskUid(u.id.toString());
-            } else {
-                config.selectedUid === 0;
-            }
+        if (users.value.length === 0) {
+            config.selectedUid === 0;
+            PutConfig(config);
             // 自动同步选项
             if (config.isAutoSync) {
                 // 使用代理同步会破坏体验
@@ -45,13 +36,13 @@ async function init() {
             }
             return;
         }
-        config.selectedUid === 0;
-    }
-
-    // 自动同步选项
-    if (config.isAutoSync) {
-        // 使用代理同步会破坏体验
-        startSync(false);
+        selectUser(config.selectedUid);
+        // 自动同步选项
+        if (config.isAutoSync) {
+            // 使用代理同步会破坏体验
+            startSync(false);
+        }
+        return;
     }
 }
 function CreatProxyNotify(onClose: () => void): () => void {
@@ -64,39 +55,40 @@ function CreatProxyNotify(onClose: () => void): () => void {
     }).close;
 }
 
-async function changeUser(user: models.User) {
-    SelectedUser = user;
-    let config = await GetConfig();
-    config.selectedUid = SelectedUser.id;
-    PutConfig(config);
-}
-
-function maskUid(uid: string): string {
+function maskUid(uid: number): string {
     let reg = /(\d{3})\d{3}(\d{3})/;
-    return uid.replace(reg, "$1****$2");
+    return uid.toString().replace(reg, "$1****$2");
 }
 
 async function startSync(isUseProxy: boolean) {
     isLoading.value = true;
     if (users.value.length !== 0) {
-        if (SelectedUser === undefined) {
+        // 没有已经选中的用户
+        if (selectedUserIndex.value === -1) {
             isLoading.value = false;
             return;
         }
+        let index = selectedUserIndex.value;
+        let u = users.value[index];
         // 如果有已经之前同步的链接，则先使用之前的链接同步
-        if (SelectedUser.raw_url !== "") {
-            let result = await sync.Sync(SelectedUser.raw_url);
+        if (u.raw_url !== "") {
+            let result = await sync.Sync(u.raw_url);
             if (result !== 0) {
-                user.Sync(result, SelectedUser.raw_url);
+                let ok = await user.Sync(result, u.raw_url);
+                if (!ok) {
+                    isLoading.value = false;
+                    return;
+                }
                 isLoading.value = false;
                 ElMessage({
                     type: "success",
                     message: "同步完成！",
                 });
+                selectUser(result);
                 return;
             }
             // result===0 说明链接不可用了
-            user.Sync(SelectedUser.id, "");
+            user.Sync(u.id, "");
         }
     }
 
@@ -107,38 +99,59 @@ async function startSync(isUseProxy: boolean) {
             sync.StopProxyServer();
         });
     }
+    // 获取链接
     let url = await sync.GetRawURL(isUseProxy);
     if (closeNotifytion !== null) closeNotifytion();
     if (url === "") {
         isLoading.value = false;
         return;
     }
+    // 拉取祈愿数据
     let result = await sync.Sync(url);
     if (result === 0) {
         isLoading.value = false;
         return;
     }
+    // 同步用户信息
     let ok = await user.Sync(result, url);
     if (!ok) {
         isLoading.value = false;
         return;
     }
     // 更新选择的 uid
+    selectUser(result);
+    ElMessage({
+        type: "success",
+        message: "同步完成！",
+    });
+    isLoading.value = false;
+}
+
+// 选择用户并更新左侧信息，相当于在选择框里选择了一个 user
+async function selectUser(uid: number) {
     users.value = await user.Get();
+    let index = -1;
     for (let i = 0; i < users.value.length; i++) {
         const user = users.value[i];
-        if (user.id === result) {
-            changeUser(user);
-            selectedUid.value = maskUid(result.toString());
-            isLoading.value = false;
-            ElMessage({
-                type: "success",
-                message: "同步完成！",
-            });
-            return;
+        if (user.id === uid) {
+            index = i;
+            break;
         }
     }
-    isLoading.value = false;
+    if (index === -1) {
+        return;
+    }
+    let u = users.value[index];
+    selectedUserIndex.value = index;
+    syncTime.value = formatTime(u.sync_time);
+    selectedUid.value = maskUid(u.id);
+    let config = await GetConfig();
+    config.selectedUid = u.id;
+    PutConfig(config);
+}
+function formatTime(time: any): string {
+    let t = time as string;
+    return t.substring(0, t.indexOf(".")).replace("T", " ");
 }
 onMounted(() => {
     init();
@@ -153,6 +166,10 @@ onMounted(() => {
             <p>一些信息</p>
             <p>一些信息</p>
             <p>一些信息</p>
+            <div class="last-sync-time" v-if="selectedUserIndex !== -1">
+                <snap>上一次同步时间: </snap>
+                <snap>{{ syncTime }}</snap>
+            </div>
         </div>
         <div class="right">
             <div style="height: 50px"></div>
@@ -160,15 +177,9 @@ onMounted(() => {
                 placeholder="选择你的 uid"
                 value-key="id"
                 v-model="selectedUid"
-                @change="changeUser"
+                @change="selectUser"
             >
-                <el-option
-                    v-for="user in users"
-                    :key="user.id"
-                    :label="maskUid(user.id.toString())"
-                    :value="user"
-                >
-                </el-option>
+                <el-option v-for="user in users" :key="user.id" :value="user"> </el-option>
             </el-select>
             <div style="height: 50px"></div>
             <div class="sync">
@@ -195,6 +206,12 @@ onMounted(() => {
     </div>
 </template>
 <style scoped>
+.last-sync-time {
+    color: var(--el-text-color-regular);
+    font-size: 10px;
+    position: absolute;
+    bottom: 8px;
+}
 .sync-button {
     height: calc(24vh);
     width: calc(24vh);
@@ -214,6 +231,7 @@ onMounted(() => {
     align-items: center;
 }
 .left {
+    position: relative;
     padding-left: 16px;
     text-align: left;
     width: 46%;
