@@ -179,7 +179,13 @@ onMounted(() => {
                 v-model="selectedUid"
                 @change="selectUser"
             >
-                <el-option v-for="user in users" :key="user.id" :value="user"> </el-option>
+                <el-option
+                    v-for="user in users"
+                    :key="user.id"
+                    :value="user"
+                    :label="maskUid(user.id)"
+                >
+                </el-option>
             </el-select>
             <div style="height: 50px"></div>
             <div class="sync">

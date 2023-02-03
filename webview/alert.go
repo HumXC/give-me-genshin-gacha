@@ -7,8 +7,10 @@ import (
 )
 
 type Message struct {
-	Type string `json:"type"`
-	Msg  string `json:"message"`
+	Type      string `json:"type"`
+	Msg       string `json:"message"`
+	ShowClose bool   `json:"show_close"`
+	Duration  int    `json:"duration"`
 }
 
 type Alert struct{ ctx context.Context }
@@ -19,25 +21,30 @@ func (m *Alert) Send(message Message) {
 }
 func (m *Alert) Error(msg string) {
 	m.Send(Message{
-		Type: "error",
-		Msg:  msg,
+		Type:      "error",
+		Msg:       msg,
+		ShowClose: true,
+		Duration:  0,
 	})
 }
 func (m *Alert) Success(msg string) {
 	m.Send(Message{
-		Type: "success",
-		Msg:  msg,
+		Type:     "success",
+		Msg:      msg,
+		Duration: 3000,
 	})
 }
 func (m *Alert) Info(msg string) {
 	m.Send(Message{
-		Type: "info",
-		Msg:  msg,
+		Type:     "info",
+		Msg:      msg,
+		Duration: 3000,
 	})
 }
 func (m *Alert) Warning(msg string) {
 	m.Send(Message{
-		Type: "warning",
-		Msg:  msg,
+		Type:     "warning",
+		Msg:      msg,
+		Duration: 3000,
 	})
 }
