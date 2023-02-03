@@ -166,10 +166,9 @@ onMounted(() => {
             <p>一些信息</p>
             <p>一些信息</p>
             <p>一些信息</p>
-            <div class="last-sync-time" v-if="selectedUserIndex !== -1">
-                <snap>上一次同步时间: </snap>
-                <snap>{{ syncTime }}</snap>
-            </div>
+            <span class="last-sync-time" v-if="selectedUserIndex !== -1"
+                >上一次同步时间: {{ syncTime }}</span
+            >
         </div>
         <div class="right">
             <div style="height: 50px"></div>
