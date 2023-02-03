@@ -8,10 +8,6 @@ import (
 	"os"
 )
 
-type savedURL struct {
-	Uid string `json:"uid"`
-	URL string `json:"url"`
-}
 type ShowGacha struct {
 	G301 bool `json:"g301"`
 	G302 bool `json:"g302"`
@@ -20,7 +16,8 @@ type ShowGacha struct {
 }
 type Config struct {
 	filePath    string
-	Language    string    `json:"language"`
+	Language    string    `json:"language"`  // 此应用程序的显示语言
+	GachaLang   string    `json:"gachaLang"` // 祈愿数据显示的语言
 	SelectedUid uint      `json:"selectedUid"`
 	ShowGacha   ShowGacha `json:"showGacha"`
 	GameDir     string    `json:"gameDir"`
@@ -84,7 +81,6 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-
 	return err
 }
 
