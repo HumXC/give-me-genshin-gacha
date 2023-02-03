@@ -38,9 +38,20 @@ async function init() {
             } else {
                 config.selectedUid === 0;
             }
+            // 自动同步选项
+            if (config.isAutoSync) {
+                // 使用代理同步会破坏体验
+                startSync(false);
+            }
             return;
         }
         config.selectedUid === 0;
+    }
+
+    // 自动同步选项
+    if (config.isAutoSync) {
+        // 使用代理同步会破坏体验
+        startSync(false);
     }
 }
 function CreatProxyNotify(onClose: () => void): () => void {
@@ -65,7 +76,7 @@ function maskUid(uid: string): string {
     return uid.replace(reg, "$1****$2");
 }
 
-async function startSync() {
+async function startSync(isUseProxy: boolean) {
     isLoading.value = true;
     if (users.value.length !== 0) {
         if (SelectedUser === undefined) {
@@ -91,12 +102,12 @@ async function startSync() {
 
     // 获取新的链接
     let closeNotifytion: (() => void) | null = null;
-    if (isUseProxy.value) {
+    if (isUseProxy) {
         closeNotifytion = CreatProxyNotify(() => {
             sync.StopProxyServer();
         });
     }
-    let url = await sync.GetRawURL(isUseProxy.value);
+    let url = await sync.GetRawURL(isUseProxy);
     if (closeNotifytion !== null) closeNotifytion();
     if (url === "") {
         isLoading.value = false;
@@ -166,7 +177,7 @@ onMounted(() => {
                     :loading="isLoading"
                     class="sync-button"
                     type="primary"
-                    @click="startSync"
+                    @click="startSync(isUseProxy)"
                     >尝试同步</el-button
                 >
                 <el-switch
