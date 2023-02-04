@@ -20,7 +20,7 @@ func NewDB(name string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	d.AutoMigrate(&GachaLog{}, &User{})
+	d.AutoMigrate(&GachaLog{}, &User{}, &Item{})
 	return &DB{
 		Item: &ItemDB{db: d},
 		User: &UserDB{db: d},

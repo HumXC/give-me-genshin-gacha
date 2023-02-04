@@ -8,6 +8,7 @@ import (
 	"give-me-genshin-gacha/models"
 	"give-me-genshin-gacha/webview"
 	"strconv"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -20,12 +21,13 @@ type SyncMsg struct {
 
 // 提供同步祈愿数据的功能
 type SyncMan struct {
-	ctx     context.Context
-	proxy   *gacha.ProxyServer
-	config  *config.Config
-	webview *webview.WebView
-	logDB   *models.LogDB
-	userDB  *models.UserDB
+	ctx       context.Context
+	proxy     *gacha.ProxyServer
+	config    *config.Config
+	webview   *webview.WebView
+	logDB     *models.LogDB
+	userDB    *models.UserDB
+	itemStore *ItemStore
 }
 
 func (s *SyncMan) Sync(rawUrl string) uint64 {
@@ -52,30 +54,40 @@ func (s *SyncMan) Sync(rawUrl string) uint64 {
 	result := make([]models.GachaLog, 0)
 
 	for _, gachaType := range gachaTypes {
-		g := f.Get(gachaType, endIDs[gachaType])
+		get := f.Get(gachaType, endIDs[gachaType])
 		page := 0
-		var err error
+		isPageEnd := false
 		for {
 			page++
 			runtime.LogInfo(s.ctx, "正在获取["+gachaType+"]第 "+strconv.Itoa(page)+" 页")
-			err = nil
-			resp, e := g()
-			logs := gacha.ConverToDBLog(resp)
+			resp, err := get()
+			if err != nil {
+				if !errors.Is(err, gacha.ErrPageEnd) {
+					s.webview.Alert.Error("获取祈愿记录失败: " + err.Error())
+					return 0
+				} else {
+					isPageEnd = true
+					runtime.LogInfo(s.ctx, "已经是最后一页了")
+				}
+			}
+			_err := s.itemStore.Load(f.Lang())
+			if _err != nil {
+				s.webview.Alert.Error("加载物品信息失败: " + err.Error())
+				return 0
+			}
+			logs, _err := s.converToDBLog(resp)
+			if _err != nil {
+				s.webview.Alert.Error("数据转换失败: " + _err.Error())
+				return 0
+			}
 			// 保证较新的记录在数组结尾
 			for i, j := 0, len(logs)-1; i < j; i, j = i+1, j-1 {
 				logs[i], logs[j] = logs[j], logs[i]
 			}
 			result = append(logs, result...)
-			if e != nil {
-				err = e
+			if isPageEnd {
 				break
 			}
-
-		}
-		if !errors.Is(err, gacha.ErrPageEnd) {
-			s.webview.Alert.Error("获取祈愿记录失败: " + err.Error())
-		} else {
-			runtime.LogInfo(s.ctx, "已经是最后一页了")
 		}
 	}
 	runtime.LogInfo(s.ctx, "将祈愿记录写入数据库")
@@ -87,6 +99,7 @@ func (s *SyncMan) Sync(rawUrl string) uint64 {
 
 	return f.Uid()
 }
+
 func (s *SyncMan) StopProxyServer() bool {
 	if s.proxy == nil {
 		return true
@@ -95,9 +108,10 @@ func (s *SyncMan) StopProxyServer() bool {
 	if err != nil {
 		s.webview.Alert.Error("无法关闭代理服务器: " + err.Error())
 	}
-	runtime.LogInfo(s.ctx, "手动动关闭代理服务器")
+	runtime.LogInfo(s.ctx, "手动关闭代理服务器")
 	return err == nil
 }
+
 func (s *SyncMan) GetRawURL(isUseProxy bool) string {
 	if isUseProxy {
 		if s.proxy == nil {
@@ -132,4 +146,46 @@ func (s *SyncMan) GetRawURL(isUseProxy bool) string {
 		return ""
 	}
 	return rawURL
+}
+
+func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog, error) {
+	layout := "2006-01-02 15:04:05"
+	result := make([]models.GachaLog, 0)
+	for i := 0; i < len(src); i++ {
+		log := models.GachaLog{}
+		log.OriginGachaType = src[i].GachaType
+		if log.OriginGachaType == "400" {
+			log.GachaType = "301"
+		} else {
+			log.GachaType = log.OriginGachaType
+		}
+		item, err := s.itemStore.itemDB.GetWithName(src[i].Lang, src[i].Name)
+		if err != nil {
+			return nil, err
+		}
+		logID, err := strconv.ParseUint(src[i].ID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		count, err := strconv.Atoi(src[i].Count)
+		if err != nil {
+			return nil, err
+		}
+		uid, err := strconv.ParseUint(src[i].Uid, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		t, err := time.ParseInLocation(layout, src[i].Time, time.Local)
+		if err != nil {
+			return nil, err
+		}
+		log.ItemID = item.ID
+		log.LogID = logID
+		log.Count = count
+		log.Uid = uid
+
+		log.Time = t
+		result = append(result, log)
+	}
+	return result, nil
 }

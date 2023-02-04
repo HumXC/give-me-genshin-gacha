@@ -28,14 +28,15 @@ func (a *App) PutConfig(cfg config.Config) {
 	a.config.Put(cfg)
 }
 
-func NewApp(config *config.Config, db *models.DB) *App {
+func NewApp(config *config.Config, db *models.DB, itemStore *ItemStore) *App {
 	app := &App{
 		config:  config,
 		UserMan: &UserMan{db: db.User},
 		SyncMan: &SyncMan{
-			config: config,
-			logDB:  db.Log,
-			userDB: db.User,
+			config:    config,
+			logDB:     db.Log,
+			userDB:    db.User,
+			itemStore: itemStore,
 		},
 	}
 	return app

@@ -7,6 +7,7 @@ import (
 )
 
 type GachaLog struct {
+	gorm.Model
 	// OriginGachaType 是米哈游自带的 gacha_type, 会有 400 的值
 	// GachaType 是 uigf_gacha_type
 	// 见 https://github.com/DGP-Studio/Snap.Genshin/wiki/StandardFormat
@@ -14,10 +15,9 @@ type GachaLog struct {
 	GachaType       string    `json:"gacha_type"`
 	Uid             uint64    `json:"uid"`
 	Time            time.Time `json:"time"`
-	ItemID          uint      `json:"item_id"`
+	ItemID          int       `json:"item_id"`
 	Count           int       `json:"count"`
 	LogID           uint64    `json:"log_id"`
-	gorm.Model
 }
 type LogDB struct {
 	db *gorm.DB

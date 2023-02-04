@@ -26,7 +26,12 @@ func main() {
 		println("Error:", err.Error())
 		return
 	}
-	a := app.NewApp(cfg, db)
+	itemStore, err := app.NewItemStore(db.Item)
+	if err != nil {
+		println("Error:", err.Error())
+		return
+	}
+	a := app.NewApp(cfg, db, itemStore)
 	// Create application with options
 	err = wails.Run(&options.App{
 		Title:  "give-me-genshin-gacha",

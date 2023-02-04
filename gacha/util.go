@@ -3,13 +3,10 @@ package gacha
 import (
 	"bufio"
 	"fmt"
-	"give-me-genshin-gacha/models"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"syscall"
-	"time"
 )
 
 const Api = "https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog"
@@ -120,30 +117,4 @@ func GetWebCacha(gameDataDir string) (*[]byte, error) {
 		}
 		result = append(result, b[:n]...)
 	}
-}
-
-func ConverToDBLog(src []RespDataListItem) []models.GachaLog {
-	layout := "2006-01-02 15:04:05"
-	result := make([]models.GachaLog, 0)
-	for i := 0; i < len(src); i++ {
-		log := models.GachaLog{}
-		log.OriginGachaType = src[i].GachaType
-		if log.OriginGachaType == "400" {
-			log.GachaType = "301"
-		} else {
-			log.GachaType = log.OriginGachaType
-		}
-		// TODO 获取 itemid
-		log.ItemID = 0
-		logID, _ := strconv.ParseUint(src[i].ID, 10, 64)
-		log.LogID = logID
-		count, _ := strconv.Atoi(src[i].Count)
-		log.Count = count
-		uid, _ := strconv.ParseUint(src[i].Uid, 10, 64)
-		log.Uid = uid
-		t, _ := time.Parse(layout, src[i].Time)
-		log.Time = t
-		result = append(result, log)
-	}
-	return result
 }
