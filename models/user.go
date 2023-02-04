@@ -21,16 +21,19 @@ type UserDB struct {
 
 // 此函数表示某个用户已经进行了一次同步操作
 func (u *UserDB) Sync(id uint64, rawURL string) error {
-	user := User{
-		ID:       id,
-		RawURL:   rawURL,
-		SyncTime: time.Now(),
+	user := User{}
+	err := u.db.Where("id = ?", id).Find(&user).Error
+	if err != nil {
+		return err
 	}
+	user.ID = id
+	user.SyncTime = time.Now()
+	user.RawURL = rawURL
 	// 如果 rawURL=="" 说明原来存在数据库里的链接已经失效，则不更新 SyncTime
 	if rawURL == "" {
 		return u.db.Model(&User{}).Where("id = ?", id).Update("raw_url", "").Error
 	}
-	return u.db.Model(&User{}).Omit("created_at").Where("id = ?", id).Save(&user).Error
+	return u.db.Save(&user).Error
 }
 
 func (u *UserDB) Get() ([]User, error) {

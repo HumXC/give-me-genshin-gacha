@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"give-me-genshin-gacha/assets"
 	"give-me-genshin-gacha/config"
 	"give-me-genshin-gacha/gacha"
 	"give-me-genshin-gacha/models"
@@ -27,7 +28,8 @@ type SyncMan struct {
 	webview   *webview.WebView
 	logDB     *models.LogDB
 	userDB    *models.UserDB
-	itemStore *ItemStore
+	itemStore *assets.ItemStore
+	itemDB    *models.ItemDB
 }
 
 func (s *SyncMan) Sync(rawUrl string) uint64 {
@@ -159,7 +161,7 @@ func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog
 		} else {
 			log.GachaType = log.OriginGachaType
 		}
-		item, err := s.itemStore.itemDB.GetWithName(src[i].Lang, src[i].Name)
+		item, err := s.itemDB.GetWithName(src[i].Lang, src[i].Name)
 		if err != nil {
 			return nil, err
 		}

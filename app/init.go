@@ -3,6 +3,7 @@ package app
 // 此包提供 app 的功能实现
 import (
 	"context"
+	"give-me-genshin-gacha/assets"
 	"give-me-genshin-gacha/config"
 	"give-me-genshin-gacha/models"
 	"give-me-genshin-gacha/webview"
@@ -28,7 +29,7 @@ func (a *App) PutConfig(cfg config.Config) {
 	a.config.Put(cfg)
 }
 
-func NewApp(config *config.Config, db *models.DB, itemStore *ItemStore) *App {
+func NewApp(config *config.Config, db *models.DB, itemStore *assets.ItemStore) *App {
 	app := &App{
 		config:  config,
 		UserMan: &UserMan{db: db.User},
@@ -37,6 +38,7 @@ func NewApp(config *config.Config, db *models.DB, itemStore *ItemStore) *App {
 			logDB:     db.Log,
 			userDB:    db.User,
 			itemStore: itemStore,
+			itemDB:    db.Item,
 		},
 	}
 	return app

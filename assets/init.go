@@ -12,7 +12,7 @@ import (
 const CHAHE_DIR string = "./cache"
 
 // 资源类型:
-// 祈愿物品的图标 /icon/gacha_item/:name
+// 祈愿物品的图标 /icon/gacha_item/:id
 type Server struct {
 	ctx context.Context
 }

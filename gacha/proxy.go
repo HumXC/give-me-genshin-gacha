@@ -13,7 +13,6 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-// TODO: 关于线程安全
 // go-mitmproxy/proxy 的插件
 // 查找指定的 URL 然后返回
 type urlFinder struct {

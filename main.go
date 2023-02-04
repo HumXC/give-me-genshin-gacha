@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"give-me-genshin-gacha/app"
+	as "give-me-genshin-gacha/assets"
 	"give-me-genshin-gacha/config"
 	"give-me-genshin-gacha/models"
 
@@ -26,7 +27,8 @@ func main() {
 		println("Error:", err.Error())
 		return
 	}
-	itemStore, err := app.NewItemStore(db.Item)
+	// as 是 assets 包，由于命名冲突便重命名成 as
+	itemStore, err := as.NewItemStore(db.Item)
 	if err != nil {
 		println("Error:", err.Error())
 		return
