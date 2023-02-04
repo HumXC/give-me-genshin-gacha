@@ -24,6 +24,7 @@ onMounted(async () => {
         <div id="leftbar">
             <button class="button-home" @click="routeTo('/')">Home</button>
             <button class="button-settings" @click="routeTo('/settings')">Settings</button>
+            <img style="height: 50px" :src="'/icon/gacha_item/10000029.png'" />
         </div>
         <!-- 右边展示页 -->
         <div style="flex: 1">

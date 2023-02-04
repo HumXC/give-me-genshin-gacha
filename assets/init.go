@@ -1,9 +1,10 @@
 package assets
 
 import (
-	"context"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 )
 
 // 提供动态资产的能力
@@ -14,28 +15,28 @@ const CHAHE_DIR string = "./cache"
 // 资源类型:
 // 祈愿物品的图标 /icon/gacha_item/:id
 type Server struct {
-	ctx context.Context
+	iconHandler *iconHandler
 }
 
-func NewServer(ctx context.Context) *Server {
+func NewServer() (*Server, error) {
 	f := Server{
-		ctx: ctx,
+		iconHandler: &iconHandler{
+			IconDir: path.Join(CHAHE_DIR, "icons"),
+		},
 	}
-
-	return &f
+	if !IsExist(f.iconHandler.IconDir) {
+		err := os.MkdirAll(f.iconHandler.IconDir, 0755)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &f, nil
 }
 
 func (f *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-
-	// 分路由
-}
-
-// 判断文件是否存在
-func IsExist(path string) bool {
-	_, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	} else {
-		return true
+	isItemIconReq := strings.HasPrefix(req.URL.Path, "/icon/gacha_item/")
+	if isItemIconReq {
+		f.iconHandler.ServeHTTP(resp, req)
+		return
 	}
 }

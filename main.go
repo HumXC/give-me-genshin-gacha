@@ -33,6 +33,11 @@ func main() {
 		println("Error:", err.Error())
 		return
 	}
+	assetsServer, err := as.NewServer()
+	if err != nil {
+		println("Error:", err.Error())
+		return
+	}
 	a := app.NewApp(cfg, db, itemStore)
 	// Create application with options
 	err = wails.Run(&options.App{
@@ -40,7 +45,8 @@ func main() {
 		Width:  740,
 		Height: 530,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: assetsServer,
 		},
 		OnStartup:  app.Startup(a),
 		OnShutdown: app.Shutdown(a),
