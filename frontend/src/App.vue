@@ -2,6 +2,9 @@
 import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { GetConfig } from "../wailsjs/go/app/App";
+import iconSetting from "./components/icons/setting.vue";
+import iconUser from "./components/icons/user.vue";
+
 import { toggleTheme } from "./util";
 const route = useRoute();
 const router = useRouter();
@@ -22,9 +25,9 @@ onMounted(async () => {
     <div style="display: flex; height: 100%">
         <!-- 左边功能栏 -->
         <div id="leftbar">
-            <button class="button-home" @click="routeTo('/')">Home</button>
-            <button class="button-settings" @click="routeTo('/settings')">Settings</button>
-            <img style="height: 50px" :src="'/icon/gacha_item/10000029.png'" />
+            <div class="mid-line"></div>
+            <icon-user class="button" @click="routeTo('/')"></icon-user>
+            <icon-setting class="button-setting" @click="routeTo('/settings')">Set</icon-setting>
         </div>
         <!-- 右边展示页 -->
         <div style="flex: 1">
@@ -44,33 +47,54 @@ onMounted(async () => {
     <!-- <router-link to="/home">Go to Home</router-link> -->
 </template>
 <style scoped>
-.button-home {
-    width: 50px;
-    height: 50px;
+.mid-line {
+    position: absolute;
+    min-width: 8px;
+    height: 90%;
+    background-color: var(--el-fill-color);
+    left: calc(50% - 4px);
+    border-radius: 10px;
+    z-index: -1;
 }
-.button-settings {
-    width: 50px;
-    height: 50px;
+.button {
+    width: 36px;
+    height: 36px;
+    margin: 10px 0 10px 0;
+    border: 2px solid var(--el-border-color);
+    border-radius: 100%;
+    background-color: var(--el-fill-color-lighter);
 }
+.button-setting {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    margin: 10px 0 10px 0;
+    border-style: dashed;
+    border: 2px solid var(--el-border-color);
+    border-radius: 100%;
+    bottom: 0px;
+    background-color: var(--el-fill-color-lighter);
+}
+
 #leftbar {
+    position: relative;
     margin: 0;
-    padding: 0;
+    padding: 0px 8px;
     height: 100%;
-    flex: 0 0 50px;
-    color: black;
+    flex: 0 0 10px;
     display: flex;
     flex-wrap: wrap;
     flex-flow: column;
+    justify-content: center;
+    align-items: center;
 }
 </style>
 <style>
 .scrollbar-wrap {
     /* height: calc(100% - 45px); */
     height: calc(100% - 45px);
-    width: calc(100% - 45px);
-    margin-top: 10px;
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-top: 12px;
+    margin-right: 12px;
     display: flex;
     flex-flow: column;
     align-items: center;

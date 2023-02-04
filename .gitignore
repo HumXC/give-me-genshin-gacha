@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-
+*.syso
 # Test binary, built with `go test -c`
 *.test
 
@@ -18,16 +18,12 @@ cmd/temp
 .vscode
 cmd/*.json
 cmd/*.db
-package-lock.json
-package.json
 build/bin
 node_modules
 frontend/dist
 frontend/wailsjs
-!frontend/package.json
-!frontend/package-lock.json
 data.db
 temp
 option.json
 config.json
-icons
+cache
