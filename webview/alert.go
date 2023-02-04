@@ -9,7 +9,7 @@ import (
 type Message struct {
 	Type      string `json:"type"`
 	Msg       string `json:"message"`
-	ShowClose bool   `json:"show_close"`
+	ShowClose bool   `json:"showClose"`
 	Duration  int    `json:"duration"`
 }
 

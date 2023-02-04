@@ -52,6 +52,7 @@ type Response struct {
 }
 type Fetcher struct {
 	uid    uint64
+	lang   string
 	lock   sync.Mutex
 	rawURL *url.URL
 }
@@ -59,6 +60,11 @@ type Fetcher struct {
 // 获取此祈愿链接的 Uid
 func (f *Fetcher) Uid() uint64 {
 	return f.uid
+}
+
+// 获取此祈愿链接的 Uid
+func (f *Fetcher) Lang() string {
+	return f.lang
 }
 
 // 进行一次请求, 测试 URL 是否可用
@@ -112,7 +118,9 @@ func (f *Fetcher) Get(gachaType string, endIDs map[uint64]uint64) func() ([]Resp
 				i, _ := strconv.ParseUint(item.Uid, 10, 64)
 				f.uid = i
 			}
-			// FIXME 如果连续同步两次，第二次同步的第一页的最后一条 endID
+			if f.lang == "" {
+				f.lang = item.Lang
+			}
 			if item.ID == strconv.FormatUint(endIDs[f.uid], 10) {
 				isEnd = true
 				return result[:i], ErrPageEnd
