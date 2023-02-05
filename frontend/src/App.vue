@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { GetConfig } from "../wailsjs/go/app/App";
 import iconSetting from "./components/icons/setting.vue";
@@ -15,6 +15,13 @@ const routeTo = (path: string) => {
     });
 };
 
+const isButtonLighting = ref([false, true]);
+function lightButton(buttonNum: number) {
+    for (let i = 0; i < isButtonLighting.value.length; i++) {
+        if (i === buttonNum) continue;
+        isButtonLighting.value[i] = false;
+    }
+}
 onMounted(async () => {
     let config = await GetConfig();
     toggleTheme(config.isDarkTheme);
@@ -26,8 +33,23 @@ onMounted(async () => {
         <!-- 左边功能栏 -->
         <div id="leftbar">
             <div class="mid-line"></div>
-            <icon-user class="button" @click="routeTo('/')"></icon-user>
-            <icon-setting class="button-setting" @click="routeTo('/settings')">Set</icon-setting>
+            <icon-user
+                v-model="isButtonLighting[1]"
+                class="button"
+                @click="
+                    routeTo('/');
+                    lightButton(1);
+                "
+            ></icon-user>
+            <icon-setting
+                v-model="isButtonLighting[0]"
+                class="button-setting"
+                @click="
+                    routeTo('/settings');
+                    lightButton(0);
+                "
+                >Set</icon-setting
+            >
         </div>
         <!-- 右边展示页 -->
         <div style="flex: 1">
@@ -51,10 +73,10 @@ onMounted(async () => {
     position: absolute;
     min-width: 8px;
     height: 90%;
-    background-color: var(--el-fill-color);
     left: calc(50% - 4px);
     border-radius: 10px;
     z-index: -1;
+    background-color: var(--main-line);
 }
 .button {
     width: 36px;
@@ -101,6 +123,6 @@ onMounted(async () => {
     border-radius: 8px;
     padding: 12px 12px 12px 12px;
     color: var(--el-text-color-primary);
-    background-color: var(--el-bg-color-page);
+    background-color: var(--main-bg);
 }
 </style>

@@ -16,12 +16,15 @@ defineEmits(["update:modelValue", "change"]);
     </div>
 </template>
 <style scoped>
+.switch-item:hover {
+    background-color: var(--main-item-hover);
+}
 .switch-item {
     flex-shrink: 0;
     width: 100%;
     height: 50px;
     color: var(--el-text-primary);
-    background-color: var(--el-fill-color-lighter);
+    background-color: var(--main-item);
     border-width: 1px;
     border-style: solid;
     border-radius: 5px;

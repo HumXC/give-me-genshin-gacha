@@ -5,6 +5,8 @@ import { GetConfig, PutConfig } from "../../wailsjs/go/app/App";
 import * as sync from "../../wailsjs/go/app/SyncMan";
 import * as user from "../../wailsjs/go/app/UserMan";
 import { models } from "../../wailsjs/go/models";
+import download from "../components/icons/download.vue";
+import downloading from "../components/icons/downloading.vue";
 
 const syncTime = ref("");
 const isLoading = ref(false);
@@ -61,6 +63,7 @@ function maskUid(uid: number): string {
 }
 
 async function startSync(isUseProxy: boolean) {
+    users.value = await user.Get();
     isLoading.value = true;
     if (users.value.length !== 0) {
         // 没有已经选中的用户
@@ -191,11 +194,16 @@ onMounted(() => {
                 <el-button
                     circle
                     :loading="isLoading"
+                    style="font-size: 3rem"
                     class="sync-button"
                     type="primary"
                     @click="startSync(isUseProxy)"
-                    >尝试同步</el-button
                 >
+                    <template #loading>
+                        <downloading />
+                    </template>
+                    <template #icon> <download /> </template>
+                </el-button>
                 <el-switch
                     v-model="isUseProxy"
                     class="sync-type"
@@ -241,8 +249,9 @@ onMounted(() => {
     text-align: left;
     width: 46%;
     border-radius: 8px;
+    border: 1px solid var(--el-border-color);
     height: 100%;
-    background-color: var(--el-fill-color-lighter);
+    background-color: var(--main-fill);
 }
 .right {
     flex: 1;
@@ -261,6 +270,7 @@ onMounted(() => {
     display: flex;
     flex-flow: column;
     align-items: center;
-    background-color: var(--el-fill-color-lighter);
+    background-color: var(--main-fill);
+    border: 1px solid var(--el-border-color);
 }
 </style>
