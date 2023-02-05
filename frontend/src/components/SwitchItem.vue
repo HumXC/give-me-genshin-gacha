@@ -25,7 +25,7 @@ defineEmits(["update:modelValue", "change"]);
     height: 50px;
     color: var(--el-text-primary);
     background-color: var(--main-item);
-    border-width: 1px;
+    border-width: 0px;
     border-style: solid;
     border-radius: 5px;
     border-color: var(--el-border-color);

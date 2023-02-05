@@ -161,64 +161,72 @@ onMounted(() => {
 });
 </script>
 <template>
-    <h1 style="height: 100px">Hi !</h1>
-    <div class="view">
-        <div class="left">
-            <p>一些信息</p>
-            <p>一些信息</p>
-            <p>一些信息</p>
-            <p>一些信息</p>
-            <p>一些信息</p>
-            <span class="last-sync-time" v-if="selectedUserIndex !== -1"
-                >上一次同步时间: {{ syncTime }}</span
-            >
-        </div>
-        <div class="right">
-            <div style="height: 50px"></div>
-            <el-select
-                placeholder="选择你的 uid"
-                value-key="id"
-                v-model="selectedUid"
-                @change="selectUser"
-            >
-                <el-option
-                    v-for="user in users"
-                    :key="user.id"
-                    :value="user"
-                    :label="maskUid(user.id)"
+    <div class="box">
+        <h2 class="title">在此，同步你的祈愿</h2>
+        <div class="view">
+            <div class="left">
+                <p>一些信息</p>
+                <p>一些信息</p>
+                <p>一些信息</p>
+                <p>一些信息</p>
+                <p>一些信息</p>
+                <span class="last-sync-time" v-if="selectedUserIndex !== -1">{{ syncTime }}</span>
+            </div>
+            <div class="right">
+                <el-select
+                    placeholder="选择你的 uid"
+                    value-key="id"
+                    v-model="selectedUid"
+                    @change="selectUser"
                 >
-                </el-option>
-            </el-select>
-            <div style="height: 50px"></div>
-            <div class="sync">
-                <el-button
-                    circle
-                    :loading="isLoading"
-                    style="font-size: 3rem"
-                    class="sync-button"
-                    type="primary"
-                    @click="startSync(isUseProxy)"
-                >
-                    <template #loading>
-                        <downloading />
-                    </template>
-                    <template #icon> <download /> </template>
-                </el-button>
-                <el-switch
-                    v-model="isUseProxy"
-                    class="sync-type"
-                    active-text="从网络代理"
-                    inactive-text="从游戏缓存"
-                    style="
-                        --el-switch-on-color: var(--el-color-success);
-                        --el-switch-off-color: var(--el-color-success);
-                    "
-                />
+                    <el-option
+                        v-for="user in users"
+                        :key="user.id"
+                        :value="user"
+                        :label="maskUid(user.id)"
+                    >
+                    </el-option>
+                </el-select>
+                <div class="sync">
+                    <el-button
+                        circle
+                        :loading="isLoading"
+                        style="font-size: 3rem"
+                        class="sync-button"
+                        type="primary"
+                        @click="startSync(isUseProxy)"
+                    >
+                        <template #loading>
+                            <downloading />
+                        </template>
+                        <template #icon> <download /> </template>
+                    </el-button>
+                    <el-switch
+                        v-model="isUseProxy"
+                        class="sync-type"
+                        active-text="从网络代理"
+                        inactive-text="从游戏缓存"
+                        style="
+                            --el-switch-on-color: var(--el-color-success);
+                            --el-switch-off-color: var(--el-color-success);
+                        "
+                    />
+                </div>
             </div>
         </div>
     </div>
 </template>
 <style scoped>
+.box {
+    height: 100%;
+    display: flex;
+    flex-flow: column;
+    position: relative;
+}
+.title {
+    margin-top: 6%;
+    margin-bottom: 8%;
+}
 .last-sync-time {
     color: var(--el-text-color-regular);
     font-size: 10px;
@@ -226,10 +234,9 @@ onMounted(() => {
     bottom: 8px;
 }
 .sync-button {
-    height: calc(24vh);
-    width: calc(24vh);
-    position: absolute;
-    top: 18%;
+    width: calc(23vh);
+    height: calc(23vh);
+    margin-bottom: 10%;
 }
 
 .sync-type {
@@ -239,28 +246,31 @@ onMounted(() => {
 }
 .view {
     width: 100%;
-    height: 100%;
     display: flex;
+    flex-grow: 1;
     align-items: center;
+    margin-bottom: 10px;
 }
 .left {
+    margin-left: 16px;
+    margin-right: 6%;
+    padding-left: 12px;
     position: relative;
-    padding-left: 16px;
     text-align: left;
     width: 46%;
     border-radius: 8px;
-    border: 1px solid var(--el-border-color);
     height: 100%;
     background-color: var(--main-fill);
 }
 .right {
+    margin-right: 16px;
     flex: 1;
-    margin-left: 5%;
     display: flex;
     flex-flow: column;
     height: 100%;
 }
 .sync {
+    margin-top: 10%;
     position: relative;
     height: 100%;
     padding-left: 20px;
@@ -270,7 +280,7 @@ onMounted(() => {
     display: flex;
     flex-flow: column;
     align-items: center;
+    justify-content: center;
     background-color: var(--main-fill);
-    border: 1px solid var(--el-border-color);
 }
 </style>

@@ -24,18 +24,25 @@ onMounted(async () => {
 });
 </script>
 <template>
-    <span class="title-top">全局</span>
-    <SwitchItem class="item" @change="(val) => toggleTheme(val)" v-model="conf.isDarkTheme">
-        深色模式</SwitchItem
+    <el-scrollbar
+        style="width: 100%"
+        :view-style="'overflow-x:hidden; padding-left:12px; padding-right:12px'"
     >
-    <SwitchItem class="item" v-model="conf.isAutoSync">自动同步</SwitchItem>
+        <div class="box">
+            <span class="title-top">全局</span>
+            <SwitchItem class="item" @change="(val) => toggleTheme(val)" v-model="conf.isDarkTheme">
+                深色模式</SwitchItem
+            >
+            <SwitchItem class="item" v-model="conf.isAutoSync">自动同步</SwitchItem>
 
-    <span class="title">显示祈愿</span>
-    <SwitchItem class="item" v-model="conf.showGacha.g301">角色活动祈愿</SwitchItem>
-    <SwitchItem class="item" v-model="conf.showGacha.g302">武器活动祈愿</SwitchItem>
-    <SwitchItem class="item" v-model="conf.showGacha.g200">常驻祈愿</SwitchItem>
-    <SwitchItem class="item" v-model="conf.showGacha.g100">新手祈愿</SwitchItem>
-    <div style="min-height: 10px"></div>
+            <span class="title">显示祈愿</span>
+            <SwitchItem class="item" v-model="conf.showGacha.g301">角色活动祈愿</SwitchItem>
+            <SwitchItem class="item" v-model="conf.showGacha.g302">武器活动祈愿</SwitchItem>
+            <SwitchItem class="item" v-model="conf.showGacha.g200">常驻祈愿</SwitchItem>
+            <SwitchItem class="item" v-model="conf.showGacha.g100">新手祈愿</SwitchItem>
+            <div style="min-height: 10px"></div>
+        </div>
+    </el-scrollbar>
 </template>
 <style scoped>
 .item {
@@ -43,6 +50,7 @@ onMounted(async () => {
     margin-bottom: 4px;
 }
 .title-top {
+    margin-top: 10px;
     font-size: 14px;
     margin-right: auto;
     color: var(--el-text-color-regular);

@@ -31,7 +31,7 @@ onMounted(async () => {
 <template>
     <div style="display: flex; height: 100%">
         <!-- 左边功能栏 -->
-        <div id="leftbar">
+        <div class="left-bar">
             <div class="mid-line"></div>
             <icon-user
                 v-model="isButtonLighting[1]"
@@ -60,23 +60,17 @@ onMounted(async () => {
             />
         </div>
         <!-- 右边展示页 -->
-        <div style="flex: 1">
-            <el-scrollbar
-                :wrap-class="'scrollbar-wrap'"
-                :view-style="['width:100%', 'height:100%', 'display:flex', 'flex-flow:column']"
-            >
-                <router-view v-slot="{ Component, route }">
-                    <transition name="fade">
-                        <keep-alive>
-                            <component :is="Component" :key="route.path" />
-                        </keep-alive>
-                    </transition>
-                </router-view>
-            </el-scrollbar>
+        <div style="flex: 1" class="right-bar">
+            <router-view v-slot="{ Component, route }">
+                <!-- 过渡动画无效 -->
+                <transition name="fade">
+                    <keep-alive>
+                        <component :is="Component" :key="route.path" />
+                    </keep-alive>
+                </transition>
+            </router-view>
         </div>
     </div>
-
-    <!-- <router-link to="/home">Go to Home</router-link> -->
 </template>
 <style scoped>
 .mid-line {
@@ -95,7 +89,7 @@ onMounted(async () => {
     cursor: pointer;
 }
 .button {
-    padding: 3px;
+    padding: 1px;
     width: 36px;
     height: 36px;
     margin: 10px 0 10px 0;
@@ -115,10 +109,10 @@ onMounted(async () => {
     background-color: var(--el-fill-color-lighter);
 }
 
-#leftbar {
+.left-bar {
     position: relative;
     margin: 0;
-    padding: 0px 8px;
+    padding: 0px 5px;
     height: 100%;
     flex: 0 0 10px;
     display: flex;
@@ -127,19 +121,14 @@ onMounted(async () => {
     justify-content: center;
     align-items: center;
 }
-</style>
-<style>
-.scrollbar-wrap {
-    /* height: calc(100% - 45px); */
-    height: calc(100% - 45px);
+.right-bar {
+    position: relative;
+    height: calc(100% - 28px);
     margin-top: 12px;
     margin-right: 12px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
     border-radius: 8px;
-    padding: 12px 12px 12px 12px;
     color: var(--el-text-color-primary);
     background-color: var(--main-bg);
 }
 </style>
+<style></style>
