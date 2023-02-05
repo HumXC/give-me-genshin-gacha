@@ -61,5 +61,12 @@ func Shutdown(a *App) func(ctx context.Context) {
 		if err != nil {
 			runtime.LogError(ctx, "配置文件保存失败: "+err.Error())
 		}
+		if a.SyncMan.proxy != nil {
+			err := a.SyncMan.proxy.Close()
+			if err != nil {
+				runtime.LogError(ctx, "关闭代理失败: "+err.Error())
+			}
+		}
+
 	}
 }
