@@ -2,9 +2,9 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { GetConfig } from "../wailsjs/go/app/App";
+import iconBook from "./components/icons/book.vue";
 import iconSetting from "./components/icons/setting.vue";
 import iconUser from "./components/icons/user.vue";
-
 import { toggleTheme } from "./util";
 const route = useRoute();
 const router = useRouter();
@@ -40,7 +40,16 @@ onMounted(async () => {
                     routeTo('/');
                     lightButton(1);
                 "
-            ></icon-user>
+            />
+            <icon-book
+                v-model="isButtonLighting[2]"
+                class="button"
+                @click="
+                    routeTo('/gacha');
+                    lightButton(2);
+                "
+            />
+
             <icon-setting
                 v-model="isButtonLighting[0]"
                 class="button-setting"
@@ -48,8 +57,7 @@ onMounted(async () => {
                     routeTo('/settings');
                     lightButton(0);
                 "
-                >Set</icon-setting
-            >
+            />
         </div>
         <!-- 右边展示页 -->
         <div style="flex: 1">
@@ -57,10 +65,12 @@ onMounted(async () => {
                 :wrap-class="'scrollbar-wrap'"
                 :view-style="['width:100%', 'height:100%', 'display:flex', 'flex-flow:column']"
             >
-                <router-view v-slot="{ Component }">
-                    <keep-alive>
-                        <component :is="Component" />
-                    </keep-alive>
+                <router-view v-slot="{ Component, route }">
+                    <transition name="fade">
+                        <keep-alive>
+                            <component :is="Component" :key="route.path" />
+                        </keep-alive>
+                    </transition>
                 </router-view>
             </el-scrollbar>
         </div>
@@ -78,7 +88,14 @@ onMounted(async () => {
     z-index: -1;
     background-color: var(--main-line);
 }
+.button:hover {
+    cursor: pointer;
+}
+.button-setting:hover {
+    cursor: pointer;
+}
 .button {
+    padding: 3px;
     width: 36px;
     height: 36px;
     margin: 10px 0 10px 0;

@@ -52,9 +52,6 @@ onMounted(() => {
     </svg>
 </template>
 <style scoped>
-svg:hover {
-    cursor: pointer;
-}
 svg:hover path {
     fill: var(--main-svg-fill-hover);
     stroke: var(--main-svg-stroke-hover);
