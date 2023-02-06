@@ -10,8 +10,8 @@ type GachaMan struct {
 	webview *webview.WebView
 }
 
-func (g *GachaMan) GetGachaInfo() []models.GachaInfo {
-	r, err := g.logDB.GetInfo()
+func (g *GachaMan) GetGachaInfo(uid int) []models.GachaInfo {
+	r, err := g.logDB.GetInfo(uid)
 	if err != nil {
 		g.webview.Alert.Error("从数据库获取祈愿信息失败: " + err.Error())
 		return nil

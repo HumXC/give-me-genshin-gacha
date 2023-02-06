@@ -34,7 +34,7 @@ type SyncMan struct {
 	itemDB    *models.ItemDB
 }
 
-func (s *SyncMan) Sync(rawURL string) uint64 {
+func (s *SyncMan) Sync(rawURL string) int {
 	f, err := gacha.NewFetcher(rawURL)
 	if err != nil {
 		if errors.Is(err, gacha.ErrURLAuthTimeout) {
@@ -182,7 +182,7 @@ func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog
 			s.itemStore.UnLoad(src[i].Lang)
 			return nil, ErrLangSrcOutdate
 		}
-		logID, err := strconv.ParseUint(src[i].ID, 10, 64)
+		logID, err := strconv.Atoi(src[i].ID)
 		if err != nil {
 			return nil, err
 		}
@@ -190,7 +190,7 @@ func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog
 		if err != nil {
 			return nil, err
 		}
-		uid, err := strconv.ParseUint(src[i].Uid, 10, 64)
+		uid, err := strconv.Atoi(src[i].Uid)
 		if err != nil {
 			return nil, err
 		}

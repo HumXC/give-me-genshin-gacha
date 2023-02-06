@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	ID        uint64 `gorm:"primarykey" json:"id"`
+	ID        int `gorm:"primarykey" json:"id"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -20,7 +20,7 @@ type UserDB struct {
 }
 
 // 此函数表示某个用户已经进行了一次同步操作
-func (u *UserDB) Sync(id uint64, rawURL string) error {
+func (u *UserDB) Sync(id int, rawURL string) error {
 	user := User{}
 	err := u.db.Where("id = ?", id).Find(&user).Error
 	if err != nil {

@@ -52,14 +52,14 @@ type Response struct {
 	Region  string   `json:"region"`
 }
 type Fetcher struct {
-	uid    uint64
+	uid    int
 	lang   string
 	lock   sync.Mutex
 	rawURL *url.URL
 }
 
 // 获取此祈愿链接的 Uid
-func (f *Fetcher) Uid() uint64 {
+func (f *Fetcher) Uid() int {
 	return f.uid
 }
 
@@ -100,7 +100,7 @@ func Test(rawURL string) error {
 // 返回一个用于获取祈愿数据的闭包
 // 如果没有下一页了, 则返回 ErrPageEnd 错误
 // endID 是上一次同步所获取的最后一个物品的 id
-func (f *Fetcher) Get(gachaType string, endIDs map[uint64]uint64) func() ([]RespDataListItem, error) {
+func (f *Fetcher) Get(gachaType string, endIDs map[int]int) func() ([]RespDataListItem, error) {
 	isEnd := false
 	// end 用于翻页
 	end := "0"
@@ -120,13 +120,13 @@ func (f *Fetcher) Get(gachaType string, endIDs map[uint64]uint64) func() ([]Resp
 		// 筛选出更新的物品
 		for i, item := range result {
 			if f.uid == 0 {
-				i, _ := strconv.ParseUint(item.Uid, 10, 64)
+				i, _ := strconv.Atoi(item.Uid)
 				f.uid = i
 			}
 			if f.lang == "" {
 				f.lang = item.Lang
 			}
-			if item.ID == strconv.FormatUint(endIDs[f.uid], 10) {
+			if item.ID == strconv.Itoa(endIDs[f.uid]) {
 				isEnd = true
 				return result[:i], ErrPageEnd
 			}
