@@ -61,13 +61,13 @@ onMounted(async () => {
         </div>
         <!-- 右边展示页 -->
         <div style="flex: 1" class="right-bar">
-            <router-view v-slot="{ Component, route }">
-                <!-- 过渡动画无效 -->
-                <transition name="fade">
-                    <keep-alive>
-                        <component :is="Component" :key="route.path" />
-                    </keep-alive>
-                </transition>
+            <router-view v-slot="{ Component, route }" v-if="$route.meta.keepAlive">
+                <keep-alive>
+                    <component :is="Component" :key="route.path" />
+                </keep-alive>
+            </router-view>
+            <router-view v-slot="{ Component, route }" v-if="!$route.meta.keepAlive">
+                <component :is="Component" :key="route.path" />
             </router-view>
         </div>
     </div>
@@ -80,7 +80,7 @@ onMounted(async () => {
     left: calc(50% - 4px);
     border-radius: 10px;
     z-index: -1;
-    background-color: var(--main-line);
+    background-color: var(--line);
 }
 .button:hover {
     cursor: pointer;
@@ -128,7 +128,7 @@ onMounted(async () => {
     margin-right: 12px;
     border-radius: 8px;
     color: var(--el-text-color-primary);
-    background-color: var(--main-bg);
+    background-color: var(--bg);
 }
 </style>
 <style></style>

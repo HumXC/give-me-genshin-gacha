@@ -260,7 +260,7 @@ onMounted(() => {
     width: 46%;
     border-radius: 8px;
     height: 100%;
-    background-color: var(--main-fill);
+    background-color: var(--fill);
 }
 .right {
     margin-right: 16px;
@@ -281,6 +281,6 @@ onMounted(() => {
     flex-flow: column;
     align-items: center;
     justify-content: center;
-    background-color: var(--main-fill);
+    background-color: var(--fill);
 }
 </style>

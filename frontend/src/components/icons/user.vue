@@ -2,10 +2,10 @@
 import { onMounted, ref, watch } from "vue";
 let props = defineProps(["modelValue"]);
 defineEmits(["update:modelValue", "change"]);
-const fillDefault = "var(--main-svg-fill)";
-const strokeDefault = "var(--main-svg-stroke)";
-const fillSelected = "var(--main-svg-fill-hover)";
-const strokeSelected = "var(--main-svg-stroke-hover)";
+const fillDefault = "var(--svg-fill)";
+const strokeDefault = "var(--svg-stroke)";
+const fillSelected = "var(--svg-fill-hover)";
+const strokeSelected = "var(--svg-stroke-hover)";
 const fillNow = ref(fillDefault);
 const strokeNow = ref(strokeDefault);
 function light(isLighting: boolean) {
@@ -55,11 +55,11 @@ onMounted(() => {
 </template>
 <style scoped>
 svg:hover circle {
-    fill: var(--main-svg-fill-hover);
-    stroke: var(--main-svg-stroke-hover);
+    fill: var(--svg-fill-hover);
+    stroke: var(--svg-stroke-hover);
 }
 svg:hover path {
-    /* fill: var(--main-svg-fill-hover); */
-    stroke: var(--main-svg-stroke-hover);
+    /* fill: var(--svg-fill-hover); */
+    stroke: var(--svg-stroke-hover);
 }
 </style>

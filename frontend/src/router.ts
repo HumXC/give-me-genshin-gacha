@@ -6,7 +6,7 @@ export const router = createRouter({
     history: createWebHashHistory(),
     // `params` 不能与 `path` 一起使用
     routes: [
-        { path: "/", name: "home", component: Home },
+        { path: "/", name: "home", component: Home, meta: { keepAlive: true } },
         { path: "/settings", name: "settings", component: Settings, props: true },
         { path: "/gacha", name: "gacha", component: Gacha, props: true },
     ],
