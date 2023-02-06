@@ -41,7 +41,7 @@ onMounted(async () => {
     let c = await GetConfig();
     showGacha.value = c.showGacha;
     isShowRank3Item.value = c.isShowRank3Item;
-    let info = await GetGachaInfo();
+    let info = await GetGachaInfo(c.selectedUid);
     info.sort((a, b) => {
         // 如果是角色和武器活动祈愿一起比较,把角色活动祈愿放前面
         if (
