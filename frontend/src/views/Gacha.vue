@@ -2,33 +2,44 @@
 import { onMounted, ref } from "vue";
 import { GetConfig } from "../../wailsjs/go/app/App";
 import { GetGachaInfo } from "../../wailsjs/go/app/GachaMan";
-import { models } from "../../wailsjs/go/models";
+import { config, models } from "../../wailsjs/go/models";
 import { gachaTypeToName } from "../util";
 const gachasInfo = ref(new Array<models.GachaInfo>());
-const showGacha = ref({
-    g301: false,
-    g302: false,
-    g200: false,
-    g100: false,
-});
+const showGacha = ref(new config.ShowGacha());
 const isShowRank3Item = ref(false);
+const isEmpty = ref(false);
 function getPercentage(n1: number, n2: number): number {
     return parseFloat(((n2 / n1) * 100).toFixed(2));
 }
+
+// 此计数如果对于 0, 则代表当前页面是空的, isEmpty 赋值为 true
+let count = 0;
 function isShowGacha(gachaType: string): boolean {
     let show = showGacha.value;
+    let result = false;
+    console.log(gachaType);
+
     switch (gachaType) {
         case "301":
-            return show.g301;
+            result = show.g301;
+            break;
         case "302":
-            return show.g302;
+            result = show.g302;
+            break;
         case "200":
-            return show.g200;
+            result = show.g200;
+            break;
         case "100":
-            return show.g100;
+            result = show.g100;
+            break;
         default:
-            return true;
+            result = true;
     }
+    console.log(result);
+
+    if (result === true) count++;
+    if (count === 0) isEmpty.value = true;
+    return result;
 }
 onMounted(async () => {
     let c = await GetConfig();
@@ -50,9 +61,9 @@ onMounted(async () => {
 });
 </script>
 <template>
-    <div style="height: 100%; overflow: hidden">
+    <div class="你好" style="height: 100%; overflow: hidden">
         <h2>- 祈愿 -</h2>
-        <el-scrollbar style="width: 100%; height: calc(100% - 75px)">
+        <el-scrollbar style="width: 100%">
             <div v-for="info in gachasInfo" :key="info.gachaType">
                 <div
                     class="info"
@@ -105,9 +116,17 @@ onMounted(async () => {
                 </div>
             </div>
         </el-scrollbar>
+        <h2 class="empty" v-if="isEmpty">空空如也</h2>
     </div>
 </template>
 <style scoped>
+.empty {
+    letter-spacing: 4px;
+    position: absolute;
+    left: calc(50% - 56px);
+    top: 30%;
+    color: var(--el-text-color-disabled);
+}
 .gacha-name {
     margin-top: 12px;
     margin-bottom: 4px;

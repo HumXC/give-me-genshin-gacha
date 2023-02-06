@@ -8,6 +8,13 @@ import (
 	"os"
 )
 
+type FilterOption struct {
+	Weapon5 bool `json:"weapon5"`
+	Weapon4 bool `json:"weapon4"`
+	Weapon3 bool `json:"weapon3"`
+	Avatar5 bool `json:"avatar5"`
+	Avatar4 bool `json:"avatar4"`
+}
 type ShowGacha struct {
 	G301 bool `json:"g301"`
 	G302 bool `json:"g302"`
@@ -16,15 +23,16 @@ type ShowGacha struct {
 }
 type Config struct {
 	filePath        string
-	Language        string    `json:"language"`  // 此应用程序的显示语言
-	GachaLang       string    `json:"gachaLang"` // 祈愿数据显示的语言
-	SelectedUid     uint      `json:"selectedUid"`
-	ShowGacha       ShowGacha `json:"showGacha"`
-	IsShowRank3Item bool      `json:"isShowRank3Item"`
-	GameDir         string    `json:"gameDir"`
-	IsDarkTheme     bool      `json:"isDarkTheme"`
-	IsAutoSync      bool      `json:"isAutoSync"`
-	IsUseProxy      bool      `json:"isUseProxy"`
+	Language        string       `json:"language"`  // 此应用程序的显示语言
+	GachaLang       string       `json:"gachaLang"` // 祈愿数据显示的语言
+	SelectedUid     uint         `json:"selectedUid"`
+	ShowGacha       ShowGacha    `json:"showGacha"`
+	IsShowRank3Item bool         `json:"isShowRank3Item"`
+	GameDir         string       `json:"gameDir"`
+	IsDarkTheme     bool         `json:"isDarkTheme"`
+	IsAutoSync      bool         `json:"isAutoSync"`
+	IsUseProxy      bool         `json:"isUseProxy"`
+	FilterOption    FilterOption `json:"filterOption"`
 }
 
 var config *Config
@@ -38,6 +46,13 @@ func Get(filePath string) (*Config, error) {
 		ShowGacha: ShowGacha{
 			G301: true,
 			G302: true,
+		},
+		FilterOption: FilterOption{
+			Avatar5: true,
+			Avatar4: true,
+			Weapon5: true,
+			Weapon4: true,
+			Weapon3: true,
 		},
 	}
 	if f, err := os.Open(filePath); err == nil {

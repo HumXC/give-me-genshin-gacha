@@ -27,7 +27,7 @@ onMounted(async () => {
 <template>
     <div style="height: 100%; overflow: hidden">
         <h2>- 设置 -</h2>
-        <el-scrollbar style="width: 100%; height: calc(100% - 75px)">
+        <el-scrollbar style="width: 100%">
             <div class="box">
                 <span class="title-top">全局</span>
                 <SwitchItem
@@ -56,7 +56,6 @@ onMounted(async () => {
     margin-bottom: 4px;
 }
 .title-top {
-    margin-top: 10px;
     font-size: 14px;
     margin-right: auto;
     color: var(--el-text-color-regular);
