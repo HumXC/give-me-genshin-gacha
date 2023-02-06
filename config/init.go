@@ -15,15 +15,16 @@ type ShowGacha struct {
 	G100 bool `json:"g100"`
 }
 type Config struct {
-	filePath    string
-	Language    string    `json:"language"`  // 此应用程序的显示语言
-	GachaLang   string    `json:"gachaLang"` // 祈愿数据显示的语言
-	SelectedUid uint      `json:"selectedUid"`
-	ShowGacha   ShowGacha `json:"showGacha"`
-	GameDir     string    `json:"gameDir"`
-	IsDarkTheme bool      `json:"isDarkTheme"`
-	IsAutoSync  bool      `json:"isAutoSync"`
-	IsUseProxy  bool      `json:"isUseProxy"`
+	filePath        string
+	Language        string    `json:"language"`  // 此应用程序的显示语言
+	GachaLang       string    `json:"gachaLang"` // 祈愿数据显示的语言
+	SelectedUid     uint      `json:"selectedUid"`
+	ShowGacha       ShowGacha `json:"showGacha"`
+	IsShowRank3Item bool      `json:"isShowRank3Item"`
+	GameDir         string    `json:"gameDir"`
+	IsDarkTheme     bool      `json:"isDarkTheme"`
+	IsAutoSync      bool      `json:"isAutoSync"`
+	IsUseProxy      bool      `json:"isUseProxy"`
 }
 
 var config *Config

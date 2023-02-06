@@ -6,6 +6,15 @@ import (
 	"gorm.io/gorm"
 )
 
+type GachaInfo struct {
+	GachaType string `json:"gachaType"`
+	AllCount  int    `json:"allCount"`
+	Avatar5   int    `json:"avatar5"`
+	Avatar4   int    `json:"avatar4"`
+	Weapon5   int    `json:"weapon5"`
+	Weapon4   int    `json:"weapon4"`
+	Weapon3   int    `json:"weapon3"`
+}
 type GachaLog struct {
 	gorm.Model
 	// OriginGachaType 是米哈游自带的 gacha_type, 会有 400 的值
@@ -21,6 +30,54 @@ type GachaLog struct {
 }
 type LogDB struct {
 	db *gorm.DB
+}
+
+func (d *LogDB) GetInfo() ([]GachaInfo, error) {
+	result := make([]struct {
+		Count     int
+		GachaType string
+		RankType  int
+		ItemType  int
+	}, 0)
+	err := d.db.Model(&GachaLog{}).
+		Select("COUNT(*) as count", "gacha_type", "rank_type", "item_type").
+		Joins("join items on gacha_logs.item_id=items.id").
+		Group("gacha_type").
+		Group("rank_type").
+		Group("item_type").
+		Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+	infosMap := make(map[string]GachaInfo, 0)
+	for _, v := range result {
+		info := infosMap[v.GachaType]
+		info.GachaType = v.GachaType
+		info.AllCount += v.Count
+		if v.ItemType == ItemAvatar {
+			switch v.RankType {
+			case 4:
+				info.Avatar4 += v.Count
+			case 5:
+				info.Avatar5 += v.Count
+			}
+			continue
+		}
+		switch v.RankType {
+		case 3:
+			info.Weapon3 += v.Count
+		case 4:
+			info.Weapon4 += v.Count
+		case 5:
+			info.Weapon5 += v.Count
+		}
+		infosMap[v.GachaType] = info
+	}
+	infos := make([]GachaInfo, 0)
+	for _, v := range infosMap {
+		infos = append(infos, v)
+	}
+	return infos, nil
 }
 
 // 添加条目到数据库

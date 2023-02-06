@@ -54,6 +54,7 @@ func main() {
 			a,
 			a.UserMan,
 			a.SyncMan,
+			a.GachaMan,
 		},
 	},
 	)

@@ -12,11 +12,12 @@ import (
 )
 
 type App struct {
-	ctx     context.Context
-	config  *config.Config
-	webView *webview.WebView
-	UserMan *UserMan
-	SyncMan *SyncMan
+	ctx      context.Context
+	config   *config.Config
+	webView  *webview.WebView
+	UserMan  *UserMan
+	SyncMan  *SyncMan
+	GachaMan *GachaMan
 }
 
 // 获取配置
@@ -40,6 +41,9 @@ func NewApp(config *config.Config, db *models.DB, itemStore *assets.ItemStore) *
 			itemStore: itemStore,
 			itemDB:    db.Item,
 		},
+		GachaMan: &GachaMan{
+			logDB: db.Log,
+		},
 	}
 	return app
 }
@@ -52,6 +56,7 @@ func Startup(a *App) func(ctx context.Context) {
 		a.UserMan.webview = webview
 		a.SyncMan.webview = webview
 		a.SyncMan.ctx = ctx
+		a.GachaMan.webview = webview
 	}
 }
 

@@ -25,9 +25,9 @@ func (i *ItemStore) Load(lang string) error {
 		if err != nil {
 			return err
 		}
-		if item.ID == 0 {
-			item.ID = v.ItemID
-		}
+		item.ID = v.ItemID
+		item.ItemType = v.ItemType
+		item.RankType = v.RankType
 		newItem := setItemName(item, lang, v.Name)
 		err = i.itemDB.Update(newItem)
 		if err != nil {

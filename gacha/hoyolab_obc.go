@@ -16,7 +16,7 @@ type ObcListItem struct {
 	ItemID   int    `json:"item_id"`
 	RankType int    `json:"level"`
 	Name     string `json:"name"`
-	ItemType int
+	ItemType models.ItemType
 }
 
 const ItemInfoAPI = "https://sg-public-api-static.hoyolab.com/common/map_user/ys_obc/v1/map/game_item?app_sn=ys_obc"
