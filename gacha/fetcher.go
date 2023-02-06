@@ -23,7 +23,8 @@ const (
 	GachaType100 = "100"
 )
 
-var ErrUrlTestFailed = errors.New("url test failed")
+var ErrURLTestFailed = errors.New("url test failed")
+var ErrURLAuthTimeout = errors.New("url authkey timeout")
 var ErrPageEnd = errors.New("page end")
 
 type RespDataListItem struct {
@@ -71,6 +72,7 @@ func (f *Fetcher) Lang() string {
 func Test(rawURL string) error {
 	type response struct {
 		Message string `json:"message"`
+		Retcode int    `json:"retcode"`
 	}
 	resp := response{}
 	url := rawURL
@@ -86,8 +88,11 @@ func Test(rawURL string) error {
 	if err != nil {
 		return err
 	}
-	if resp.Message != "OK" {
-		return fmt.Errorf("%w: "+resp.Message, ErrUrlTestFailed)
+	if resp.Retcode == -101 {
+		return ErrURLAuthTimeout
+	}
+	if resp.Retcode != 0 {
+		return fmt.Errorf("%w: "+resp.Message, ErrURLTestFailed)
 	}
 	return nil
 }

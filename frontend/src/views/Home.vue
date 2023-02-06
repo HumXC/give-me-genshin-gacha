@@ -65,36 +65,35 @@ function maskUid(uid: number): string {
 async function startSync(isUseProxy: boolean) {
     users.value = await user.Get();
     isLoading.value = true;
-    if (users.value.length !== 0) {
-        // 没有已经选中的用户
-        if (selectedUserIndex.value === -1) {
+    // 数据库的 users 表里有记录但是没有被选中
+    if (users.value.length !== 0 && selectedUserIndex.value === -1) {
+        isLoading.value = false;
+        return;
+    }
+    let index = selectedUserIndex.value;
+    let u = users.value[index];
+    // 如果有已经之前同步的链接，则先使用之前的链接同步
+    if (u.raw_url !== "") {
+        let result = await sync.Sync(u.raw_url);
+        if (result === 0) {
+            user.Sync(u.id, "");
             isLoading.value = false;
             return;
         }
-        let index = selectedUserIndex.value;
-        let u = users.value[index];
-        // 如果有已经之前同步的链接，则先使用之前的链接同步
-        if (u.raw_url !== "") {
-            let result = await sync.Sync(u.raw_url);
-            if (result !== 0) {
-                let ok = await user.Sync(result, u.raw_url);
-                if (!ok) {
-                    isLoading.value = false;
-                    return;
-                }
-                isLoading.value = false;
-                ElMessage({
-                    type: "success",
-                    message: "同步完成！",
-                });
-                selectUser(result);
-                return;
-            }
-            // result===0 说明链接不可用了
-            user.Sync(u.id, "");
+        let ok = await user.Sync(result, u.raw_url);
+        if (!ok) {
+            isLoading.value = false;
+            return;
         }
+        isLoading.value = false;
+        ElMessage({
+            type: "success",
+            message: "同步完成！",
+        });
+        selectUser(result);
+        return;
+        // result===0 说明链接不可用了
     }
-
     // 获取新的链接
     let closeNotifytion: (() => void) | null = null;
     if (isUseProxy) {
@@ -177,7 +176,7 @@ onMounted(() => {
                     placeholder="选择你的 uid"
                     value-key="id"
                     v-model="selectedUid"
-                    @change="selectUser"
+                    @change="(v: any)=>{selectUser(v.id as number) }"
                 >
                     <el-option
                         v-for="user in users"

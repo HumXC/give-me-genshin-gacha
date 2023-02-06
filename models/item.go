@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -21,6 +22,7 @@ type Item struct {
 	RankType  ItemType       `json:"rank_type"` // 星数
 	ItemType  ItemType       `json:"item_type"` // 武器还是角色
 	// 以下是各语言的物品名称
+	// 如果需要增加语言的支持，还需要更改 LoadedLang 方法和 assets/item.go 的代码
 	ZhCN string `gorm:"column:zh-cn" json:"zh-cn"`
 	ZhTW string `gorm:"column:zh-tw" json:"zh-tw"`
 	JaJP string `gorm:"column:ja-jp" json:"ja-jp"`
@@ -45,25 +47,29 @@ func (i *ItemDB) GetWithName(lang, name string) (Item, error) {
 // 获取已经加载的语言种类
 func (i *ItemDB) LoadedLang() ([]string, error) {
 	result := make([]string, 0)
-	r := make([]Item, 0)
-	err := i.db.Model(&Item{}).Limit(1).Find(&r).Error
+	r := Item{}
+	err := i.db.Last(&r).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return result, nil
+		}
 		return nil, err
 	}
-	if len(r) == 0 {
+	// 此处的判断 ID == 1 是因为在 NewDB 里增加了一条初始记录 ID 是 1
+	if r.ID == 1 {
 		return result, nil
 	}
 	// TODO: 是否有更好的办法，而不是 if
-	if r[0].ZhCN != "" {
+	if r.ZhCN != "" {
 		result = append(result, "zh-cn")
 	}
-	if r[0].ZhTW != "" {
+	if r.ZhTW != "" {
 		result = append(result, "zh-tw")
 	}
-	if r[0].JaJP != "" {
+	if r.JaJP != "" {
 		result = append(result, "ja-jp")
 	}
-	if r[0].EnUS != "" {
+	if r.EnUS != "" {
 		result = append(result, "en-us")
 	}
 	return result, nil

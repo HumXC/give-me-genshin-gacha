@@ -25,15 +25,28 @@ var resps map[string][]ObcListItem = make(map[string][]ObcListItem)
 
 type AssetsStore struct{}
 
+// 此处的 LoadedLang 与 model.ItemDB 中的 LangedLang 是不一样的
+// 这里指的是已经加载的从网络上请求来的热数据
+func (a *AssetsStore) LoadedLang() []string {
+	keys := make([]string, 0, len(resps))
+	for k := range resps {
+		keys = append(keys, k)
+	}
+	return keys
+}
 func (a *AssetsStore) Get(lang string) ([]ObcListItem, error) {
 	_, ok := resps[lang]
 	if !ok {
-		a.fetch(lang)
+		result, err := a.fetch(lang)
+		if err != nil {
+			return nil, err
+		}
+		resps[lang] = result
 	}
 	return resps[lang], nil
 }
 
-func (a *AssetsStore) fetch(lang string) error {
+func (a *AssetsStore) fetch(lang string) ([]ObcListItem, error) {
 	type ObcRespBody struct {
 		Data struct {
 			Avatar struct {
@@ -47,30 +60,30 @@ func (a *AssetsStore) fetch(lang string) error {
 	}
 	_url, err := url.Parse(ItemInfoAPI)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	query := _url.Query()
 	query.Add("lang", lang)
 	_url.RawQuery = query.Encode()
 	r, err := http.DefaultClient.Get(_url.String())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if r.StatusCode != 200 {
-		return errors.New(strconv.Itoa(r.StatusCode) + ": " + r.Status)
+		return nil, errors.New(strconv.Itoa(r.StatusCode) + ": " + r.Status)
 	}
 	defer r.Body.Close()
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resp := ObcRespBody{}
 	err = json.Unmarshal(b, &resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.Message != "OK" {
-		return errors.New(resp.Message)
+		return nil, errors.New(resp.Message)
 	}
 	aList := resp.Data.Avatar.List
 	wList := resp.Data.Weapon.List
@@ -80,6 +93,5 @@ func (a *AssetsStore) fetch(lang string) error {
 	for i := 0; i < len(wList); i++ {
 		wList[i].ItemType = models.ItemWeapon
 	}
-	resps[lang] = append(aList, wList...)
-	return nil
+	return append(aList, wList...), nil
 }

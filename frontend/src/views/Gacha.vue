@@ -7,7 +7,7 @@ import { gachaTypeToName } from "../util";
 const gachasInfo = ref(new Array<models.GachaInfo>());
 const showGacha = ref(new config.ShowGacha());
 const isShowRank3Item = ref(false);
-const isEmpty = ref(false);
+const isEmpty = ref(true);
 function getPercentage(n1: number, n2: number): number {
     return parseFloat(((n2 / n1) * 100).toFixed(2));
 }
@@ -17,8 +17,6 @@ let count = 0;
 function isShowGacha(gachaType: string): boolean {
     let show = showGacha.value;
     let result = false;
-    console.log(gachaType);
-
     switch (gachaType) {
         case "301":
             result = show.g301;
@@ -35,18 +33,16 @@ function isShowGacha(gachaType: string): boolean {
         default:
             result = true;
     }
-    console.log(result);
-
     if (result === true) count++;
-    if (count === 0) isEmpty.value = true;
+    if (count !== 0) isEmpty.value = false;
     return result;
 }
 onMounted(async () => {
     let c = await GetConfig();
     showGacha.value = c.showGacha;
     isShowRank3Item.value = c.isShowRank3Item;
-    gachasInfo.value = await GetGachaInfo();
-    gachasInfo.value.sort((a, b) => {
+    let info = await GetGachaInfo();
+    info.sort((a, b) => {
         // 如果是角色和武器活动祈愿一起比较,把角色活动祈愿放前面
         if (
             (a.gachaType == "301" && b.gachaType == "302") ||
@@ -58,6 +54,7 @@ onMounted(async () => {
         if (a.gachaType > b.gachaType) return -1;
         return 1;
     });
+    gachasInfo.value = info;
 });
 </script>
 <template>

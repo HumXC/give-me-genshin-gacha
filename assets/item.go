@@ -38,6 +38,11 @@ func (i *ItemStore) Load(lang string) error {
 	return nil
 }
 
+// 卸载语言资源，如果已有的语言资源过期了则调用此方法
+// 例如有原神发布新角色了，但是语言资源还没更新，就会存在无法获取物品名称的问题
+func (i *ItemStore) UnLoad(lang string) {
+	delete(i.loadedLang, lang)
+}
 func setItemName(item models.Item, lang, name string) models.Item {
 	switch lang {
 	case "zh-cn":

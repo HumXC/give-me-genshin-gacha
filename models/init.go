@@ -21,9 +21,20 @@ func NewDB(name string) (*DB, error) {
 		return nil, err
 	}
 	d.AutoMigrate(&GachaLog{}, &User{}, &Item{})
-	return &DB{
+	db := &DB{
 		Item: &ItemDB{db: d},
 		User: &UserDB{db: d},
 		Log:  &LogDB{db: d},
-	}, nil
+	}
+	item, err := db.Item.GetWithID(1)
+	if err != nil {
+		return nil, err
+	}
+	item.ZhCN = "记录损坏"
+	// 此纪录可能会对 debug 有帮助
+	err = db.Item.Update(item)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }

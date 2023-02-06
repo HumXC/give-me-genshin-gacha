@@ -43,8 +43,9 @@ func (m *Alert) Info(msg string) {
 }
 func (m *Alert) Warning(msg string) {
 	m.Send(Message{
-		Type:     "warning",
-		Msg:      msg,
-		Duration: 3000,
+		Type:      "warning",
+		Msg:       msg,
+		Duration:  10000,
+		ShowClose: true,
 	})
 }

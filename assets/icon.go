@@ -48,15 +48,19 @@ func (i *iconHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (i *iconHandler) fetch() {
-	defer func() {
-		i.isFetching.Unlock()
-	}()
+	defer i.isFetching.Unlock()
 	fmt.Println("正在获取图标资源")
-	items, err := i.assetsStore.Get("zh-cn")
+	lang := "zh-cn"
+	loadedLang := i.assetsStore.LoadedLang()
+	if len(loadedLang) != 0 {
+		lang = loadedLang[0]
+	}
+	items, err := i.assetsStore.Get(lang)
 	if err != nil {
 		fmt.Println("获取图标资源失败: " + err.Error())
 		return
 	}
+	// 多协程下载图片
 	var wg sync.WaitGroup
 	ch := make(chan struct{}, 16)
 	for j := 0; j < len(items); j++ {

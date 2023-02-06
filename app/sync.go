@@ -14,6 +14,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+var ErrLangSrcOutdate = errors.New("lang src outdate")
+
 type SyncMsg struct {
 	Uid    string `json:"uid"`
 	RawURL string `json:"raw_url"`
@@ -32,12 +34,15 @@ type SyncMan struct {
 	itemDB    *models.ItemDB
 }
 
-func (s *SyncMan) Sync(rawUrl string) uint64 {
-	f, err := gacha.NewFetcher(rawUrl)
+func (s *SyncMan) Sync(rawURL string) uint64 {
+	f, err := gacha.NewFetcher(rawURL)
 	if err != nil {
-		// 测试失败返回空，但是此错误不需要在前端报告
-		if errors.Is(err, gacha.ErrUrlTestFailed) {
-			s.webview.Alert.Warning("爬虫创建失败: " + err.Error())
+		if errors.Is(err, gacha.ErrURLAuthTimeout) {
+			s.webview.Alert.Warning("URL 已过期，请尝试")
+			return 0
+		}
+		if errors.Is(err, gacha.ErrURLTestFailed) {
+			s.webview.Alert.Error("爬虫创建失败: " + err.Error())
 			return 0
 		}
 		if err != nil {
@@ -72,6 +77,7 @@ func (s *SyncMan) Sync(rawUrl string) uint64 {
 					runtime.LogInfo(s.ctx, "已经是最后一页了")
 				}
 			}
+			// 加载对应的语言资源，否则无法找到对应的 ItemID
 			_err := s.itemStore.Load(f.Lang())
 			if _err != nil {
 				s.webview.Alert.Error("加载物品信息失败: " + err.Error())
@@ -79,6 +85,10 @@ func (s *SyncMan) Sync(rawUrl string) uint64 {
 			}
 			logs, _err := s.converToDBLog(resp)
 			if _err != nil {
+				if errors.Is(_err, ErrLangSrcOutdate) {
+					s.webview.Alert.Warning("物品信息已过期，请重试以更新: " + _err.Error())
+					return 0
+				}
 				s.webview.Alert.Error("数据转换失败: " + _err.Error())
 				return 0
 			}
@@ -163,9 +173,14 @@ func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog
 		} else {
 			log.GachaType = log.OriginGachaType
 		}
+		// 如果没有找到对应的物品，那么查询出来的结果 id 等于 0，这就说明语言资源过期了
 		item, err := s.itemDB.GetWithName(src[i].Lang, src[i].Name)
 		if err != nil {
 			return nil, err
+		}
+		if item.ID == 0 {
+			s.itemStore.UnLoad(src[i].Lang)
+			return nil, ErrLangSrcOutdate
 		}
 		logID, err := strconv.ParseUint(src[i].ID, 10, 64)
 		if err != nil {

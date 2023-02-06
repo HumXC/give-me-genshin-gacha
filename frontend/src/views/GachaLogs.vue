@@ -12,7 +12,7 @@ const isShowFilter = ref(false);
 // 排序选项一般是临时开启，故单独拎出来不放在 filterOption 里，不做持久化
 const sortDESC = ref(false);
 const filterOption = ref(new config.FilterOption());
-const isEmpty = ref(false);
+const isEmpty = ref(true);
 // 按照过滤选项请求祈愿记录
 async function getGachaLog() {}
 
