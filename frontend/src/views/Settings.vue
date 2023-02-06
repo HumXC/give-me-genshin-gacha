@@ -19,6 +19,7 @@ onMounted(async () => {
         config.isDarkTheme = conf.value.isDarkTheme;
         config.showGacha = conf.value.showGacha;
         config.language = conf.value.language;
+        config.isShowRank3Item = conf.value.isShowRank3Item;
         PutConfig(config);
     });
 });
@@ -35,11 +36,12 @@ onMounted(async () => {
             >
             <SwitchItem class="item" v-model="conf.isAutoSync">自动同步</SwitchItem>
 
-            <span class="title">显示祈愿</span>
+            <span class="title">祈愿</span>
             <SwitchItem class="item" v-model="conf.showGacha.g301">角色活动祈愿</SwitchItem>
             <SwitchItem class="item" v-model="conf.showGacha.g302">武器活动祈愿</SwitchItem>
             <SwitchItem class="item" v-model="conf.showGacha.g200">常驻祈愿</SwitchItem>
             <SwitchItem class="item" v-model="conf.showGacha.g100">新手祈愿</SwitchItem>
+            <SwitchItem class="item" v-model="conf.isShowRank3Item">显示三星物品</SwitchItem>
             <div style="min-height: 10px"></div>
         </div>
     </el-scrollbar>

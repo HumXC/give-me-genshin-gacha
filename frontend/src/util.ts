@@ -67,3 +67,22 @@ export function copyObjTo(src: any, dest: any) {
         dest[key] = src[key];
     }
 }
+
+export function gachaTypeToName(gachaType: string): string {
+    switch (gachaType) {
+        case "301":
+            return "角色活动祈愿";
+
+        case "302":
+            return "武器活动祈愿";
+
+        case "200":
+            return "常驻祈愿";
+
+        case "100":
+            return "新手祈愿";
+
+        default:
+            return "未知祈愿类型: " + gachaType;
+    }
+}

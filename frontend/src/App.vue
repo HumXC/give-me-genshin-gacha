@@ -1,19 +1,10 @@
 <script lang="ts" setup>
 import { onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import { GetConfig } from "../wailsjs/go/app/App";
 import iconBook from "./components/icons/book.vue";
 import iconSetting from "./components/icons/setting.vue";
 import iconUser from "./components/icons/user.vue";
 import { toggleTheme } from "./util";
-const route = useRoute();
-const router = useRouter();
-const routeTo = (path: string) => {
-    router.push({
-        path: path,
-        query: { ...route.query },
-    });
-};
 
 const isButtonLighting = ref([false, true]);
 function lightButton(buttonNum: number) {
@@ -37,7 +28,7 @@ onMounted(async () => {
                 v-model="isButtonLighting[1]"
                 class="button"
                 @click="
-                    routeTo('/');
+                    $router.replace('/');
                     lightButton(1);
                 "
             />
@@ -45,7 +36,7 @@ onMounted(async () => {
                 v-model="isButtonLighting[2]"
                 class="button"
                 @click="
-                    routeTo('/gacha');
+                    $router.replace('/gacha');
                     lightButton(2);
                 "
             />
@@ -54,7 +45,7 @@ onMounted(async () => {
                 v-model="isButtonLighting[0]"
                 class="button-setting"
                 @click="
-                    routeTo('/settings');
+                    $router.replace('/settings');
                     lightButton(0);
                 "
             />
