@@ -73,7 +73,7 @@ async function startSync(isUseProxy: boolean) {
     let index = selectedUserIndex.value;
     let u = users.value[index];
     // 如果有已经之前同步的链接，则先使用之前的链接同步
-    if (u.raw_url !== "") {
+    if (index !== -1 && u.raw_url !== "") {
         let result = await sync.Sync(u.raw_url);
         if (result === 0) {
             user.Sync(u.id, "");

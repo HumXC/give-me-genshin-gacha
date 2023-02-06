@@ -15,7 +15,7 @@ type DB struct {
 // 初始化数据库
 func NewDB(name string) (*DB, error) {
 	d, err := gorm.Open(sqlite.Open(name), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		return nil, err
