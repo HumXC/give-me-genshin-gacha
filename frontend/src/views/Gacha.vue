@@ -5,45 +5,6 @@ import { GetGachaInfo } from "../../wailsjs/go/app/GachaMan";
 import { models } from "../../wailsjs/go/models";
 import { gachaTypeToName } from "../util";
 const gachasInfo = ref(new Array<models.GachaInfo>());
-let fakeData = [
-    {
-        gachaType: "301",
-        allCount: 100,
-        avatar5: 3,
-        avatar4: 54,
-        weapon5: 13,
-        weapon4: 0,
-        weapon3: 0,
-    },
-    {
-        gachaType: "302",
-        allCount: 100,
-        avatar5: 15,
-        avatar4: 12,
-        weapon5: 23,
-        weapon4: 24,
-        weapon3: 31,
-    },
-    {
-        gachaType: "200",
-        allCount: 200,
-        avatar5: 12,
-        avatar4: 32,
-        weapon5: 10,
-        weapon4: 13,
-        weapon3: 45,
-    },
-    {
-        gachaType: "100",
-        allCount: 201,
-        avatar5: 31,
-        avatar4: 12,
-        weapon5: 21,
-        weapon4: 21,
-        weapon3: 32,
-    },
-];
-
 const showGacha = ref({
     g301: false,
     g302: false,
@@ -51,8 +12,8 @@ const showGacha = ref({
     g100: false,
 });
 const isShowRank3Item = ref(false);
-function getPercentage(n1: number, n2: number): string {
-    return ((n2 / n1) * 100).toFixed(2);
+function getPercentage(n1: number, n2: number): number {
+    return parseFloat(((n2 / n1) * 100).toFixed(2));
 }
 function isShowGacha(gachaType: string): boolean {
     let show = showGacha.value;
@@ -90,9 +51,7 @@ onMounted(async () => {
 </script>
 <template>
     <div style="height: 100%; overflow: hidden">
-        <div class="header">
-            <h2>- 祈愿 -</h2>
-        </div>
+        <h2>- 祈愿 -</h2>
         <el-scrollbar style="width: 100%; height: calc(100% - 75px)">
             <div v-for="info in gachasInfo" :key="info.gachaType">
                 <div

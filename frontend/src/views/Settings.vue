@@ -25,26 +25,30 @@ onMounted(async () => {
 });
 </script>
 <template>
-    <el-scrollbar
-        style="width: 100%"
-        :view-style="'overflow-x:hidden; padding-left:12px; padding-right:12px'"
-    >
-        <div class="box">
-            <span class="title-top">全局</span>
-            <SwitchItem class="item" @change="(val) => toggleTheme(val)" v-model="conf.isDarkTheme">
-                深色模式</SwitchItem
-            >
-            <SwitchItem class="item" v-model="conf.isAutoSync">自动同步</SwitchItem>
+    <div style="height: 100%; overflow: hidden">
+        <h2>- 设置 -</h2>
+        <el-scrollbar style="width: 100%; height: calc(100% - 75px)">
+            <div class="box">
+                <span class="title-top">全局</span>
+                <SwitchItem
+                    class="item"
+                    @change="(val) => toggleTheme(val)"
+                    v-model="conf.isDarkTheme"
+                >
+                    深色模式</SwitchItem
+                >
+                <SwitchItem class="item" v-model="conf.isAutoSync">自动同步</SwitchItem>
 
-            <span class="title">祈愿</span>
-            <SwitchItem class="item" v-model="conf.showGacha.g301">角色活动祈愿</SwitchItem>
-            <SwitchItem class="item" v-model="conf.showGacha.g302">武器活动祈愿</SwitchItem>
-            <SwitchItem class="item" v-model="conf.showGacha.g200">常驻祈愿</SwitchItem>
-            <SwitchItem class="item" v-model="conf.showGacha.g100">新手祈愿</SwitchItem>
-            <SwitchItem class="item" v-model="conf.isShowRank3Item">显示三星物品</SwitchItem>
-            <div style="min-height: 10px"></div>
-        </div>
-    </el-scrollbar>
+                <span class="title">祈愿</span>
+                <SwitchItem class="item" v-model="conf.showGacha.g301">角色活动祈愿</SwitchItem>
+                <SwitchItem class="item" v-model="conf.showGacha.g302">武器活动祈愿</SwitchItem>
+                <SwitchItem class="item" v-model="conf.showGacha.g200">常驻祈愿</SwitchItem>
+                <SwitchItem class="item" v-model="conf.showGacha.g100">新手祈愿</SwitchItem>
+                <SwitchItem class="item" v-model="conf.isShowRank3Item">显示三星物品</SwitchItem>
+                <div style="min-height: 10px"></div>
+            </div>
+        </el-scrollbar>
+    </div>
 </template>
 <style scoped>
 .item {
@@ -66,5 +70,7 @@ onMounted(async () => {
 .box {
     display: flex;
     flex-flow: column;
+    margin-left: 12px;
+    margin-right: 12px;
 }
 </style>

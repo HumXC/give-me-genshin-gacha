@@ -52,18 +52,34 @@ onMounted(async () => {
         </div>
         <!-- 右边展示页 -->
         <div style="flex: 1" class="right-bar">
-            <router-view v-slot="{ Component, route }" v-if="$route.meta.keepAlive">
-                <keep-alive>
-                    <component :is="Component" :key="route.path" />
-                </keep-alive>
-            </router-view>
-            <router-view v-slot="{ Component, route }" v-if="!$route.meta.keepAlive">
-                <component :is="Component" :key="route.path" />
+            <router-view v-slot="{ Component, route }">
+                <Transition name="fade">
+                    <div :key="route.path" style="height: 100%">
+                        <keep-alive v-if="$route.meta.keepAlive">
+                            <component :is="Component" />
+                        </keep-alive>
+                        <component :is="Component" v-if="!$route.meta.keepAlive" />
+                    </div>
+                </Transition>
             </router-view>
         </div>
     </div>
 </template>
 <style scoped>
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.2s ease;
+    position: absolute;
+    width: 100%;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    position: absolute;
+    width: 100%;
+}
+
 .mid-line {
     position: absolute;
     min-width: 8px;
