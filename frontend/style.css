@@ -5,7 +5,7 @@ html:root {
     /* 右侧页面的背景，比较亮的颜色 */
     --bg: rgb(255, 255, 255);
     /* 填充颜色，比背景暗一点，一般用于内容展示 */
-    --fill: rgba(242, 241, 241, 0.716);
+    --fill: rgba(243, 243, 243, 0.771);
     /* svg 图标的填充色 */
     --svg-fill: rgb(255, 255, 255);
     --svg-stroke: rgb(82, 82, 82);
@@ -14,9 +14,22 @@ html:root {
     /* 窗体左侧按钮中间的那条线 */
     --line: rgba(253, 253, 253, 0.768);
     /* 配置页的选项条目所使用的颜色 */
-    --item: rgb(239, 239, 239);
-    --item-hover: rgb(212, 212, 212);
-    /* 五星武器的底色 */
+    --item: rgba(239, 239, 239, 0.892);
+    --item-hover: rgba(223, 223, 223, 0.763);
+    /* 祈愿物品的进度条颜色 */
+    --gacha-item-prog-bg-3: #557de1;
+    --gacha-item-prog-bg-4: #8f62d4;
+    --gacha-item-prog-bg-5: #da8d4a;
+    --gacha-item-prog-in-3: #70bff3;
+    --gacha-item-prog-in-4: #d9a2e7de;
+    --gacha-item-prog-in-5: #ffd52c;
+    /* 祈愿物品的文字颜色与对应背景色 */
+    --gacha-item-text-3: #fdfeff;
+    --gacha-item-text-4: #fff2fa;
+    --gacha-item-text-5: #fffdf5;
+    --gacha-item-bg-3: #f39d53;
+    --gacha-item-bg-4: #a37dde;
+    --gacha-item-bg-5: #5ba8d6;
 }
 html.dark {
     color-scheme: dark;
