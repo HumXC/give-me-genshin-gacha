@@ -137,7 +137,7 @@ func (s *SyncMan) GetRawURL(isUseProxy bool) string {
 	if s.config.GameDir == "" {
 		dir, err := gacha.GetGameDir()
 		if err != nil {
-			s.webview.Alert.Error(err.Error())
+			s.webview.Alert.Error("无法获取游戏目录" + err.Error())
 			return ""
 		}
 		s.config.GameDir = dir
@@ -145,6 +145,8 @@ func (s *SyncMan) GetRawURL(isUseProxy bool) string {
 	rawURL, err := gacha.GetRawURL(s.config.GameDir)
 	if err != nil {
 		s.webview.Alert.Error("无法获取祈愿链接: " + err.Error())
+		// 获取失败也可能是游戏目录的问题，所以清除游戏目录
+		s.config.GameDir = ""
 		return ""
 	}
 	return rawURL
