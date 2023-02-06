@@ -1,3 +1,6 @@
+html > * {
+    user-select: none;
+}
 html:root {
     color-scheme: light;
     /* 窗体的背景颜色 */
