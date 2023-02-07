@@ -52,8 +52,9 @@ func Get(filePath string) (*Config, error) {
 			Avatar4: true,
 			Weapon5: true,
 			Weapon4: true,
-			Weapon3: true,
+			Weapon3: false,
 		},
+		IsShowRank3Item: true,
 	}
 	if f, err := os.Open(filePath); err == nil {
 		defer f.Close()

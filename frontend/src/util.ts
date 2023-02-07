@@ -86,3 +86,7 @@ export function gachaTypeToName(gachaType: string): string {
             return "未知祈愿类型: " + gachaType;
     }
 }
+
+export function formatTime(time: any): string {
+    return (time as string).substring(0, 19).replace("T", " ");
+}

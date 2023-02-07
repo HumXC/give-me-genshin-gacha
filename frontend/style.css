@@ -19,6 +19,8 @@ html:root {
     /* 配置页的选项条目所使用的颜色 */
     --item: rgba(239, 239, 239, 0.892);
     --item-hover: rgba(223, 223, 223, 0.763);
+    /* Gacha 页进度条背景 */
+    --gacha-prog-bg: rgb(211, 211, 211);
     /* 祈愿物品的进度条颜色 */
     --gacha-item-prog-bg-3: #557de1;
     --gacha-item-prog-bg-4: #8f62d4;
@@ -30,9 +32,9 @@ html:root {
     --gacha-item-text-3: #fdfeff;
     --gacha-item-text-4: #fff2fa;
     --gacha-item-text-5: #fffdf5;
-    --gacha-item-bg-3: #f39d53;
-    --gacha-item-bg-4: #a37dde;
-    --gacha-item-bg-5: #5ba8d6;
+    --gacha-item-bg-5: #f1a129;
+    --gacha-item-bg-4: #ac74ff;
+    --gacha-item-bg-3: #5ba8d6;
 }
 html.dark {
     color-scheme: dark;
@@ -46,4 +48,20 @@ html.dark {
     --line: rgba(36, 36, 36, 0.782);
     --item: rgb(33, 33, 33);
     --item-hover: rgb(45, 45, 45);
+    /* Gacha 页进度条背景 */
+    --gacha-prog-bg: rgb(60, 60, 60);
+    /* 祈愿物品的进度条颜色 */
+    --gacha-item-prog-bg-3: #557de1;
+    --gacha-item-prog-bg-4: #825bbd;
+    --gacha-item-prog-bg-5: #9b691d;
+    --gacha-item-prog-in-3: #63a5d1;
+    --gacha-item-prog-in-4: #ce96dbde;
+    --gacha-item-prog-in-5: #e3c139;
+    /* 祈愿物品的文字颜色与对应背景色 */
+    --gacha-item-text-3: #fdfeff;
+    --gacha-item-text-4: #fff2fa;
+    --gacha-item-text-5: #fffdf5;
+    --gacha-item-bg-5: #ca841c;
+    --gacha-item-bg-4: #8d6cbf;
+    --gacha-item-bg-3: #4b8cb1;
 }

@@ -15,18 +15,18 @@ const (
 )
 
 type Item struct {
-	ID        int `gorm:"primarykey" josn:"id"`
+	ID        int `gorm:"primarykey"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-	RankType  ItemType       `json:"rank_type"` // 星数
-	ItemType  ItemType       `json:"item_type"` // 武器还是角色
+	RankType  int            // 星数
+	ItemType  ItemType       // 武器还是角色
 	// 以下是各语言的物品名称
 	// 如果需要增加语言的支持，还需要更改 LoadedLang 方法和 assets/item.go 的代码
-	ZhCN string `gorm:"column:zh-cn" json:"zh-cn"`
-	ZhTW string `gorm:"column:zh-tw" json:"zh-tw"`
-	JaJP string `gorm:"column:ja-jp" json:"ja-jp"`
-	EnUS string `gorm:"column:en-us" json:"en-us"`
+	ZhCN string `gorm:"column:zh-cn"`
+	ZhTW string `gorm:"column:zh-tw"`
+	JaJP string `gorm:"column:ja-jp"`
+	EnUS string `gorm:"column:en-us"`
 }
 
 type ItemDB struct {

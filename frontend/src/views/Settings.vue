@@ -27,7 +27,7 @@ onMounted(async () => {
 <template>
     <div style="height: 100%; overflow: hidden">
         <h2>- 设置 -</h2>
-        <el-scrollbar style="width: 100%">
+        <el-scrollbar style="width: 100%; height: calc(100% - 74px)">
             <div class="box">
                 <span class="title-top">全局</span>
                 <SwitchItem

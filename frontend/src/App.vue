@@ -68,7 +68,7 @@ onMounted(async () => {
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-    transition: opacity 0.2s ease;
+    transition: opacity 0.1s ease;
     position: absolute;
     width: 100%;
 }

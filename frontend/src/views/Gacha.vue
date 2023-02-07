@@ -60,7 +60,7 @@ onMounted(async () => {
 <template>
     <div class="你好" style="height: 100%; overflow: hidden">
         <h2>- 祈愿 -</h2>
-        <el-scrollbar style="width: 100%">
+        <el-scrollbar style="width: 100%; height: calc(100% - 74px)">
             <div v-for="info in gachasInfo" :key="info.gachaType">
                 <div
                     class="info"
@@ -117,6 +117,9 @@ onMounted(async () => {
     </div>
 </template>
 <style scoped>
+:deep(.el-progress-bar__outer) {
+    background-color: var(--gacha-prog-bg);
+}
 .empty {
     letter-spacing: 4px;
     position: absolute;

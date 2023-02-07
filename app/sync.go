@@ -92,6 +92,10 @@ func (s *SyncMan) Sync(rawURL string) int {
 				s.webview.Alert.Error("数据转换失败: " + _err.Error())
 				return 0
 			}
+			// 设置祈愿的语言
+			if s.config.GachaLang == "" {
+				s.config.GachaLang = f.Lang()
+			}
 			// 保证较新的记录在数组结尾
 			for i, j := 0, len(logs)-1; i < j; i, j = i+1, j-1 {
 				logs[i], logs[j] = logs[j], logs[i]
