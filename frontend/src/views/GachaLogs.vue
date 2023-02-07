@@ -1,8 +1,10 @@
 <script lang="ts" setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { GetConfig, PutConfig } from "../../wailsjs/go/app/App";
-import { config } from "../../wailsjs/go/models";
+import { GetGachaLogs } from "../../wailsjs/go/app/GachaMan";
+import { config, models } from "../../wailsjs/go/models";
+import GachaItem from "../components/GachaItem.vue";
 import SwitchItem from "../components/SwitchItem.vue";
 import { gachaTypeToName } from "../util";
 // 为了获取 gachaType，故引入路由，在 onMounted 处使用
@@ -11,20 +13,78 @@ const gachaType = ref("");
 const isShowFilter = ref(false);
 // 排序选项一般是临时开启，故单独拎出来不放在 filterOption 里，不做持久化
 const sortDESC = ref(false);
+let sortDESCHasChanged = false;
+watch(sortDESC, () => {
+    sortDESCHasChanged = !sortDESCHasChanged;
+});
 const filterOption = ref(new config.FilterOption());
 const isEmpty = ref(true);
+const isLoading = ref(true);
+let isEnd = false;
 // 按照过滤选项请求祈愿记录
-async function getGachaLog() {}
-
-// 保存过滤设置
-async function saveFilterOption() {
+async function getGachaLog() {
+    if (isEnd) return;
+    isLoading.value = true;
     let c = await GetConfig();
-    c.filterOption.avatar4 = filterOption.value.avatar4;
-    c.filterOption.avatar5 = filterOption.value.avatar5;
-    c.filterOption.weapon3 = filterOption.value.weapon3;
-    c.filterOption.weapon4 = filterOption.value.weapon4;
-    c.filterOption.weapon5 = filterOption.value.weapon5;
-    PutConfig(c);
+    let logs = await GetGachaLogs(
+        page.value,
+        c.selectedUid,
+        c.gachaLang,
+        gachaType.value,
+        filterOption.value,
+        sortDESC.value
+    );
+    if (logs.length === 0) {
+        isEmpty.value = true;
+        isEnd = true;
+        isLoading.value = true;
+    }
+    gachaData.value.push(...logs);
+    if (gachaData.value.length !== 0) isEmpty.value = false;
+    isLoading.value = false;
+    page.value++;
+}
+const page = ref(0);
+const gachaData = ref(new Array<models.FullGachaLog>());
+// 保存过滤设置,如果值没有改变返回 false
+async function saveFilterOption(): Promise<boolean> {
+    let c = await GetConfig();
+    let f = filterOption.value;
+    let cf = c.filterOption;
+    let v = false;
+    let hasChange = (v1: boolean, v2: boolean) => {
+        if (v) return v;
+        v = !(v1 == v2);
+        return v;
+    };
+
+    hasChange(cf.avatar4, f.avatar4);
+    hasChange(cf.avatar5, f.avatar5);
+    hasChange(cf.weapon3, f.weapon3);
+    hasChange(cf.weapon4, f.weapon4);
+    hasChange(cf.weapon5, f.weapon5);
+    let hasChanged = v || sortDESCHasChanged;
+    if (hasChanged) {
+        cf.avatar4 = f.avatar4;
+        cf.avatar5 = f.avatar5;
+        cf.weapon3 = f.weapon3;
+        cf.weapon4 = f.weapon4;
+        cf.weapon5 = f.weapon5;
+        PutConfig(c);
+        sortDESCHasChanged = false;
+    }
+    return hasChanged;
+}
+
+async function handDrawerClose(done: () => void) {
+    let hasChanged = await saveFilterOption();
+    if (hasChanged) {
+        isEnd = false;
+        gachaData.value = [];
+        page.value = 0;
+        await getGachaLog();
+    }
+    done();
 }
 onMounted(async () => {
     let c = await GetConfig();
@@ -34,6 +94,7 @@ onMounted(async () => {
     filterOption.value.weapon4 = c.filterOption.weapon4;
     filterOption.value.weapon5 = c.filterOption.weapon5;
     gachaType.value = route.query.gachaType as string;
+    await getGachaLog();
 });
 </script>
 <template>
@@ -75,11 +136,7 @@ onMounted(async () => {
                 direction="rtl"
                 size="40%"
                 :before-close="
-                    (done: () => void) => {
-                       saveFilterOption();
-                       getGachaLog()
-                       done()
-                    }
+                    (done:() => void) => handDrawerClose(done)
                 "
             >
                 <template #header><span style="text-align: left">筛选</span></template>
@@ -116,7 +173,18 @@ onMounted(async () => {
                 >
             </el-drawer>
         </div>
-        <el-scrollbar style="width: 100%"> </el-scrollbar>
+        <el-scrollbar style="width: 100%; height: calc(100% - 74px)">
+            <div
+                infinite-scroll-distance="100"
+                infinite-scroll-immediate="false"
+                v-infinite-scroll="getGachaLog"
+                :infinite-scroll-disabled="isLoading"
+            >
+                <div v-for="item in gachaData" style="margin-bottom: 16px; height: 100%">
+                    <GachaItem :data="item"></GachaItem>
+                </div>
+            </div>
+        </el-scrollbar>
         <h2 class="empty" v-if="isEmpty">空空如也</h2>
     </div>
 </template>

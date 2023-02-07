@@ -1,6 +1,7 @@
 package app
 
 import (
+	"give-me-genshin-gacha/config"
 	"give-me-genshin-gacha/models"
 	"give-me-genshin-gacha/webview"
 )
@@ -17,4 +18,17 @@ func (g *GachaMan) GetGachaInfo(uid int) []models.GachaInfo {
 		return nil
 	}
 	return r
+}
+
+// TODO: 优化此处 where
+func (g *GachaMan) GetGachaLogs(page, uid int, lang, gachaType string, filter config.FilterOption, desc bool) []models.FullGachaLog {
+	if lang == "" {
+		lang = "zh-cn"
+	}
+	result, err := g.logDB.GetFullGacha(page, uid, lang, gachaType, filter.Avatar4, filter.Avatar5, filter.Weapon3, filter.Weapon4, filter.Weapon5, desc)
+	if err != nil {
+		g.webview.Alert.Error("从数据库获取祈愿记录失败: " + err.Error())
+		return nil
+	}
+	return result
 }
