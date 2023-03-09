@@ -53,8 +53,8 @@ type LogDB struct {
 func (d *LogDB) GetFullGacha(page int, uid uint, lang, gachaType string, a4, a5, w3, w4, w5, desc bool) ([]FullGachaLog, error) {
 	offset := page * 100
 	result := make([]FullGachaLog, 0)
-	tx := d.db.Model(&GachaLog{}).
-		Where("uid = ? AND gacha_type = ?", uid, gachaType).Offset(offset)
+	tx := d.db.Model(&GachaLog{}).Debug().
+		Where("user_id = ? AND gacha_type = ?", uid, gachaType).Offset(offset)
 	var tx2 *gorm.DB
 	or := func(it, rt int) {
 		if tx2 == nil {
@@ -131,7 +131,7 @@ func (d *LogDB) cost(uid uint, id int, rankType int, gachaType string) (int, err
 	err := d.db.Model(&GachaLog{}).
 		Select("gacha_logs.id").
 		Joins("join items on gacha_logs.item_id=items.id").
-		Where("uid = ? AND gacha_type = ? AND rank_type >= ? AND gacha_logs.id BETWEEN 0 and ? ", uid, gachaType, rankType, id).
+		Where("user_id = ? AND gacha_type = ? AND rank_type >= ? AND gacha_logs.id BETWEEN 0 and ? ", uid, gachaType, rankType, id).
 		Order("gacha_logs.id DESC").
 		Limit(2).
 		Scan(&tmp).Error
@@ -143,14 +143,14 @@ func (d *LogDB) cost(uid uint, id int, rankType int, gachaType string) (int, err
 		// 说明在之前的记录里已经没有更多星的物品了
 		err := d.db.Model(&GachaLog{}).
 			Select("id").
-			Where("uid = ? AND gacha_type = ? AND id <= ?", uid, gachaType, tmp[0]).
+			Where("user_id = ? AND gacha_type = ? AND id <= ?", uid, gachaType, tmp[0]).
 			Count(&result).Error
 		return int(result), err
 	}
 
 	err = d.db.Model(&GachaLog{}).
 		Select("id").
-		Where("uid = ? AND gacha_type = ? AND id BETWEEN ? and ? ", uid, gachaType, tmp[1], tmp[0]).
+		Where("user_id = ? AND gacha_type = ? AND id BETWEEN ? and ? ", uid, gachaType, tmp[1], tmp[0]).
 		Count(&result).Error
 	return int(result) - 1, err
 }
@@ -162,7 +162,7 @@ func (d *LogDB) GetInfo(uid int) ([]GachaInfo, error) {
 		ItemType  int
 	}, 0)
 	err := d.db.Model(&GachaLog{}).
-		Where("uid = ?", uid).
+		Where("user_id = ?", uid).
 		Select("COUNT(*) as count", "gacha_type", "rank_type", "item_type").
 		Joins("join items on gacha_logs.item_id=items.id").
 		Group("gacha_type").
@@ -218,7 +218,7 @@ func (d *LogDB) EndLogIDs() (map[string]map[uint]uint, error) {
 	result := make(map[string]map[uint]uint, 0)
 	col := make([]GachaLog, 0)
 	subQuery := d.db.Model(&GachaLog{}).Order("id DESC")
-	err := d.db.Table("(?) as u", subQuery).Select("uid", "log_id", "gacha_type").Group("gacha_type").Find(&col).Error
+	err := d.db.Table("(?) as u", subQuery).Select("user_id", "log_id", "gacha_type").Group("gacha_type").Find(&col).Error
 	for _, log := range col {
 		if result[log.GachaType] == nil {
 			result[log.GachaType] = make(map[uint]uint, 0)

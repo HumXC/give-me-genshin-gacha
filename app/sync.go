@@ -80,7 +80,7 @@ func (s *SyncMan) Sync(rawURL string) uint {
 			// 加载对应的语言资源，否则无法找到对应的 ItemID
 			_err := s.itemStore.Load(f.Lang())
 			if _err != nil {
-				s.webview.Alert.Error("加载物品信息失败: " + err.Error())
+				s.webview.Alert.Error("加载物品信息失败: " + _err.Error())
 				return 0
 			}
 			logs, _err := s.converToDBLog(resp)

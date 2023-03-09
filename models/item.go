@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+
 	"gorm.io/gorm"
 )
 
@@ -36,13 +38,19 @@ func (i *ItemDB) GetWithID(id uint) (item Item, err error) {
 
 func (i *ItemDB) GetWithName(lang, name string) (Item, error) {
 	item := Item{}
-	err := i.db.Model(&Item{}).
-		Preload("Names", "lang=? AND value=?", lang, name).
-		Find(&item).Error
-	return item, err
+	var id uint = 0
+	err := i.db.Model(&Name{}).Debug().
+		Select("item_id").
+		Where("lang=? AND value=?", lang, name).
+		Find(&id).Error
+	if err != nil {
+		return item, err
+	}
+	return i.GetWithID(id)
 }
 
 // 获取已经加载的语言种类
+// FIXME 似乎不准确
 func (i *ItemDB) LoadedLang() ([]string, error) {
 	result := make([]string, 0, 10)
 	err := i.db.Model(&Item{}).Select("lang").Group("lang").Association("Names").Find(&result)
@@ -57,10 +65,18 @@ func (i *ItemDB) Update(item Item) error {
 
 // 设置名称
 func (i *ItemDB) SetName(id uint, lang, name string) error {
-	err := i.db.Model(&Item{
+	var _name sql.NullString
+	err := i.db.Model(&Name{}).Select("value").Where("item_id=? AND lang=?", id, lang).Find(&_name).Error
+	if err != nil {
+		return err
+	}
+	if _name.Valid {
+		return nil
+	}
+	err = i.db.Model(&Item{
 		Model: gorm.Model{ID: id},
 	}).
 		Association("Names").
-		Replace(&Name{Lang: lang, ItemID: id, Value: name})
+		Append(&Name{Lang: lang, ItemID: id, Value: name})
 	return err
 }

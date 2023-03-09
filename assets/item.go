@@ -28,11 +28,11 @@ func (i *ItemStore) Load(lang string) error {
 		item.ID = v.ItemID
 		item.ItemType = v.ItemType
 		item.RankType = v.RankType
-		item.Names = append(item.Names, models.Name{
-			Lang:  lang,
-			Value: v.Name,
-		})
 		err = i.itemDB.Update(item)
+		if err != nil {
+			return err
+		}
+		err = i.itemDB.SetName(v.ItemID, lang, v.Name)
 		if err != nil {
 			return err
 		}
