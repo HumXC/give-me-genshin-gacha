@@ -13,7 +13,7 @@ import (
 // 此文件用于请求外部的 hoyolab API 来请求获取物品头像等资源
 type ObcListItem struct {
 	Icon     string `json:"icon"`
-	ItemID   int    `json:"item_id"`
+	ItemID   uint   `json:"item_id"`
 	RankType int    `json:"level"`
 	Name     string `json:"name"`
 	ItemType models.ItemType

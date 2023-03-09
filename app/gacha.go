@@ -21,7 +21,7 @@ func (g *GachaMan) GetGachaInfo(uid int) []models.GachaInfo {
 }
 
 // TODO: 优化此处 where
-func (g *GachaMan) GetGachaLogs(page, uid int, lang, gachaType string, filter config.FilterOption, desc bool) []models.FullGachaLog {
+func (g *GachaMan) GetGachaLogs(page int, uid uint, lang, gachaType string, filter config.FilterOption, desc bool) []models.FullGachaLog {
 	if lang == "" {
 		lang = "zh-cn"
 	}

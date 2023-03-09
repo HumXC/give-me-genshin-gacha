@@ -34,11 +34,11 @@ type SyncMan struct {
 	itemDB    *models.ItemDB
 }
 
-func (s *SyncMan) Sync(rawURL string) int {
+func (s *SyncMan) Sync(rawURL string) uint {
 	f, err := gacha.NewFetcher(rawURL)
 	if err != nil {
 		if errors.Is(err, gacha.ErrURLAuthTimeout) {
-			s.webview.Alert.Warning("URL 已过期，请尝试")
+			s.webview.Alert.Warning("URL 已过期，请重试")
 			return 0
 		}
 		if errors.Is(err, gacha.ErrURLTestFailed) {
@@ -186,7 +186,7 @@ func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog
 			s.itemStore.UnLoad(src[i].Lang)
 			return nil, ErrLangSrcOutdate
 		}
-		logID, err := strconv.Atoi(src[i].ID)
+		logID, err := strconv.ParseUint(src[i].ID, 10, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +194,7 @@ func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog
 		if err != nil {
 			return nil, err
 		}
-		uid, err := strconv.Atoi(src[i].Uid)
+		uid, err := strconv.ParseUint(src[i].Uid, 10, 64)
 		if err != nil {
 			return nil, err
 		}
@@ -203,9 +203,9 @@ func (s *SyncMan) converToDBLog(src []gacha.RespDataListItem) ([]models.GachaLog
 			return nil, err
 		}
 		log.ItemID = item.ID
-		log.LogID = logID
+		log.LogID = uint(logID)
 		log.Count = count
-		log.Uid = uid
+		log.UserID = uint(uid)
 
 		log.Time = t
 		result = append(result, log)

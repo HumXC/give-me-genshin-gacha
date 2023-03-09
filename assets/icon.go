@@ -64,7 +64,11 @@ func (i *iconHandler) fetch() {
 	var wg sync.WaitGroup
 	ch := make(chan struct{}, 16)
 	for j := 0; j < len(items); j++ {
-		fileName := path.Join(i.IconDir, strconv.Itoa(items[j].ItemID)+".png")
+		fileName := path.Join(
+			i.IconDir,
+			strconv.FormatUint(
+				uint64(items[j].ItemID), 10,
+			)+".png")
 		if IsExist(fileName) {
 			continue
 		}

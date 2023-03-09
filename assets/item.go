@@ -28,8 +28,11 @@ func (i *ItemStore) Load(lang string) error {
 		item.ID = v.ItemID
 		item.ItemType = v.ItemType
 		item.RankType = v.RankType
-		newItem := setItemName(item, lang, v.Name)
-		err = i.itemDB.Update(newItem)
+		item.Names = append(item.Names, models.Name{
+			Lang:  lang,
+			Value: v.Name,
+		})
+		err = i.itemDB.Update(item)
 		if err != nil {
 			return err
 		}
@@ -42,19 +45,6 @@ func (i *ItemStore) Load(lang string) error {
 // 例如有原神发布新角色了，但是语言资源还没更新，就会存在无法获取物品名称的问题
 func (i *ItemStore) UnLoad(lang string) {
 	delete(i.loadedLang, lang)
-}
-func setItemName(item models.Item, lang, name string) models.Item {
-	switch lang {
-	case "zh-cn":
-		item.ZhCN = name
-	case "zh-tw":
-		item.ZhTW = name
-	case "ja-jp":
-		item.JaJP = name
-	case "en-us":
-		item.EnUS = name
-	}
-	return item
 }
 
 func NewItemStore(itemDB *models.ItemDB) (*ItemStore, error) {

@@ -16,7 +16,7 @@ type FullGachaLog struct {
 	ItemType        ItemType  `json:"itemType"`
 	Name            string    `json:"name"`
 	Time            time.Time `json:"time"`
-	ItemID          int       `json:"itemId"`
+	ItemID          uint      `json:"itemId"`
 	ID              int       // 此处的 id 用于计算 Cost
 }
 type GachaInfo struct {
@@ -29,26 +29,31 @@ type GachaInfo struct {
 	Weapon3   int    `json:"weapon3"`
 }
 type GachaLog struct {
-	gorm.Model
+	ID        uint `gorm:"primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 	// OriginGachaType 是米哈游自带的 gacha_type, 会有 400 的值
 	// GachaType 是 uigf_gacha_type
 	// 见 https://github.com/DGP-Studio/Snap.Genshin/wiki/StandardFormat
 	OriginGachaType string
 	GachaType       string
-	Uid             int
+	UserID          uint
 	Time            time.Time
-	ItemID          int
+	ItemID          uint
 	Count           int
-	LogID           int
+	LogID           uint
 }
 type LogDB struct {
 	db *gorm.DB
 }
 
-func (d *LogDB) GetFullGacha(page, uid int, lang, gachaType string, a4, a5, w3, w4, w5, desc bool) ([]FullGachaLog, error) {
+// FIXME 删除祈愿的语言信息（Name）前端获取对应的语言名称获取物品名称
+// 获取祈愿记录，最后的参数用与筛选，a和w表示角色和武器，后面的数字代表rank_type
+func (d *LogDB) GetFullGacha(page int, uid uint, lang, gachaType string, a4, a5, w3, w4, w5, desc bool) ([]FullGachaLog, error) {
 	offset := page * 100
 	result := make([]FullGachaLog, 0)
-	tx := d.db.Model(&GachaLog{}).Debug().
+	tx := d.db.Model(&GachaLog{}).
 		Where("uid = ? AND gacha_type = ?", uid, gachaType).Offset(offset)
 	var tx2 *gorm.DB
 	or := func(it, rt int) {
@@ -76,7 +81,6 @@ func (d *LogDB) GetFullGacha(page, uid int, lang, gachaType string, a4, a5, w3, 
 	tx.Where(tx2)
 	tx.Joins("join items on gacha_logs.item_id=items.id").
 		Select(
-			"`"+lang+"` as name",
 			"gacha_type",
 			"origin_gacha_type",
 			"rank_type",
@@ -95,17 +99,30 @@ func (d *LogDB) GetFullGacha(page, uid int, lang, gachaType string, a4, a5, w3, 
 		return nil, err
 	}
 	for i := 0; i < len(result); i++ {
+		// 计算 cost
 		c, err := d.cost(uid, result[i].ID, result[i].RankType, result[i].GachaType)
 		if err != nil {
 			return nil, err
 		}
 		result[i].Cost = c
+		// 获取对应语言的名称
+		n, err := d.getName(result[i].ItemID, lang)
+		if err != nil {
+			return nil, err
+		}
+		result[i].Name = n
 	}
 	return result, nil
 }
+func (d *LogDB) getName(id uint, lang string) (n string, err error) {
+	err = d.db.Model(&Item{
+		Model: gorm.Model{ID: id},
+	}).Select("value").Where("lang=?", lang).Association("Names").Find(&n)
+	return
+}
 
 // 计算 Cost，Cost 定义见 FullGachaLog 结构体定义
-func (d *LogDB) cost(uid, id, rankType int, gachaType string) (int, error) {
+func (d *LogDB) cost(uid uint, id int, rankType int, gachaType string) (int, error) {
 	if rankType == 3 {
 		return 1, nil
 	}
@@ -144,7 +161,7 @@ func (d *LogDB) GetInfo(uid int) ([]GachaInfo, error) {
 		RankType  int
 		ItemType  int
 	}, 0)
-	err := d.db.Model(&GachaLog{}).Debug().
+	err := d.db.Model(&GachaLog{}).
 		Where("uid = ?", uid).
 		Select("COUNT(*) as count", "gacha_type", "rank_type", "item_type").
 		Joins("join items on gacha_logs.item_id=items.id").
@@ -197,16 +214,16 @@ func (d *LogDB) Add(items []GachaLog) error {
 
 // TODO: 测试多用户时此方法的正确性
 // 获取每个池子每个 uid 最新的一次祈愿记录
-func (d *LogDB) EndLogIDs() (map[string]map[int]int, error) {
-	result := make(map[string]map[int]int, 0)
+func (d *LogDB) EndLogIDs() (map[string]map[uint]uint, error) {
+	result := make(map[string]map[uint]uint, 0)
 	col := make([]GachaLog, 0)
 	subQuery := d.db.Model(&GachaLog{}).Order("id DESC")
 	err := d.db.Table("(?) as u", subQuery).Select("uid", "log_id", "gacha_type").Group("gacha_type").Find(&col).Error
 	for _, log := range col {
 		if result[log.GachaType] == nil {
-			result[log.GachaType] = make(map[int]int, 0)
+			result[log.GachaType] = make(map[uint]uint, 0)
 		}
-		result[log.GachaType][log.Uid] = log.LogID
+		result[log.GachaType][log.UserID] = log.LogID
 	}
 	return result, err
 }
