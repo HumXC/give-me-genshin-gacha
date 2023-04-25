@@ -12,8 +12,8 @@ import (
 // 此文件用于请求外部的 hoyolab API 来请求获取物品头像等资源
 type GameItem struct {
 	Icon     string `json:"icon"`
-	ItemID   uint   `json:"item_id"`
-	RankType int    `json:"level"`
+	ItemID   uint64 `json:"item_id"`
+	RankType uint8  `json:"level"`
 	Name     string `json:"name"`
 }
 
