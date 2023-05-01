@@ -3,11 +3,14 @@ package gacha
 // 提供系统代理相关的功能
 import (
 	"context"
+	"io"
 	"net"
+	"os"
 	"strings"
 
 	"github.com/Trisia/gosysproxy"
 	"github.com/lqqyt2423/go-mitmproxy/proxy"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -69,15 +72,29 @@ func GetSystemProxyInfo() (result systemProxyInfo, e error) {
 type ProxyServer struct {
 	savedURL chan string
 	err      chan error
+	addr     string
 	Err      <-chan error
 }
 
+func (p *ProxyServer) Addr() string {
+	return p.addr
+}
 func (p *ProxyServer) Url() string {
 	return <-p.savedURL
 }
 
 // 创建一个代理服务器，只用于捕获请求的 URL
-func NewProxyServer(ctx context.Context, targetURL string) *ProxyServer {
+func NewProxyServer(ctx context.Context, targetURL string, logOut ...io.Writer) *ProxyServer {
+	if len(logOut) > 0 {
+		logrus.SetOutput(logOut[0])
+	} else {
+		null, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+		if err != nil {
+			panic(err)
+		}
+		logrus.SetOutput(null)
+	}
+
 	urlChan := make(chan string, 1)
 	errChan := make(chan error, 1)
 	server := ProxyServer{
@@ -91,6 +108,7 @@ func NewProxyServer(ctx context.Context, targetURL string) *ProxyServer {
 		errChan <- err
 		return &server
 	}
+	server.addr = freeAddr
 	opts := &proxy.Options{
 		Debug:             0,
 		Addr:              freeAddr,
@@ -108,7 +126,6 @@ func NewProxyServer(ctx context.Context, targetURL string) *ProxyServer {
 		TargetURL: targetURL,
 	}
 	pro.AddAddon(addon)
-
 	proErr := make(chan error)
 	go func() {
 		err := pro.Start()

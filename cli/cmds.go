@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"give-me-genshin-gacha/database"
 	"give-me-genshin-gacha/gacha"
 	"give-me-genshin-gacha/models"
+	"os"
+	"os/signal"
 	"strconv"
+	"sync"
+	"syscall"
 	"unicode/utf8"
 )
 
@@ -38,11 +43,15 @@ func NewFlagSet(name, usage string, actionMaker ActionMaker) FlagSet {
 	return f
 }
 
+var quitTask = make([]func(), 0)
+
 type Cli struct {
 	commands map[string]FlagSet
+	wg       *sync.WaitGroup
 }
 
 func (c *Cli) Run(args []string) {
+	defer c.wg.Wait()
 	if cmd, ok := c.commands[args[0]]; ok {
 		err := cmd.Run(args[1:])
 		if err != nil {
@@ -51,7 +60,7 @@ func (c *Cli) Run(args []string) {
 		}
 		return
 	}
-	fmt.Printf("Unknow command [%s]\n", args[0])
+	fmt.Printf("Unknow command [%s], usage:\n", args[0])
 	c.Usage()
 }
 func (c *Cli) Usage() {
@@ -63,6 +72,7 @@ func (c *Cli) Usage() {
 func NewCli() Cli {
 	c := Cli{
 		commands: map[string]FlagSet{},
+		wg:       &sync.WaitGroup{},
 	}
 	cmdD :=
 		NewFlagSet("D", "查找游戏的数据文件夹", GetGameDir)
@@ -71,7 +81,16 @@ func NewCli() Cli {
 	c.commands[cmdD.Name()] = cmdD
 	c.commands[cmdG.Name()] = cmdG
 	c.commands[cmdI.Name()] = cmdI
-
+	sign := make(chan os.Signal, 1)
+	signal.Notify(sign, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func(ch chan os.Signal, wg *sync.WaitGroup) {
+		<-ch
+		for _, task := range quitTask {
+			wg.Add(1)
+			task()
+			wg.Done()
+		}
+	}(sign, c.wg)
 	return c
 }
 
@@ -88,10 +107,9 @@ func GetGameDir(*flag.FlagSet) Action {
 
 func GetGachaURL(flag *flag.FlagSet) Action {
 	gameDir := flag.String("d", "", "指定游戏的目录，如果不指定则自动获取")
-	// useProxy := flag.Bool("p", false, "使用代理服务器的方式获取链接")
-	return func() error {
+	useProxy := flag.Bool("p", false, "使用代理服务器的方式获取链接")
+	getWithGameFile := func() error {
 		var dir string
-		// TODO: 使用代理服务器
 		if *gameDir == "" {
 			_dir, err := gacha.GetGameDir()
 			if err != nil {
@@ -105,6 +123,39 @@ func GetGachaURL(flag *flag.FlagSet) Action {
 		}
 		fmt.Println(url)
 		return nil
+	}
+	getWithProxy := func() error {
+		ctx, cancel := context.WithCancel(context.Background())
+		server := gacha.NewProxyServer(ctx, gacha.Api)
+		var isQuit bool
+		whenQuit := func() {
+			if isQuit {
+				return
+			}
+			isQuit = true
+			cancel()
+			for err := range server.Err {
+				fmt.Println(err)
+			}
+		}
+		quitTask = append(quitTask, whenQuit)
+		url := server.Url()
+		if isQuit {
+			return nil
+		}
+		cancel()
+		for err := range server.Err {
+			return err
+		}
+		fmt.Println(url)
+		return nil
+	}
+	return func() error {
+		if *useProxy {
+			return getWithProxy()
+		} else {
+			return getWithGameFile()
+		}
 	}
 }
 
